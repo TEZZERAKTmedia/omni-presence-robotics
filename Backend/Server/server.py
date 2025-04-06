@@ -124,11 +124,21 @@ if __name__ == '__main__':
 
     try:
         while True:
-            cmd_queue = server.read_data_from_command_server()  # Get the command server's message queue
-            if cmd_queue.qsize() > 0:  # Check if there are messages in the queue
-                client_address, message = cmd_queue.get()  # Get a message from the queue
-                print(client_address, message)  # Print the client address and message
-                server.send_data_to_command_client(message, client_address)  # Send the message back to the client
+            cmd_queue = server.read_data_from_command_server()
+            if cmd_queue.qsize() > 0:
+                client_address, message = cmd_queue.get()
+
+                print("Received from", client_address, ":", message)
+
+                # server.py
+                if client_address == "websocket_ui":
+                    server.send_data_to_command_client(message.encode())  # Encode to bytes!
+                    print("[FORWARDING JOYSTICK COMMAND TO ROBOT TCP CLIENT]")
+
+                else:
+                    # This is a regular TCP message
+                    server.send_data_to_command_client(message, client_address)
+
 
             video_queue = server.read_data_from_video_server()  # Get the video server's message queue
             if video_queue.qsize() > 0:  # Check if there are messages in the queue
