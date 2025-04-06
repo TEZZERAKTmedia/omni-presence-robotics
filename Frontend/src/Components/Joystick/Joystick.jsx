@@ -1,11 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './Joystick.css'; // Assuming external CSS file
+import './Joystick.css';
+import { connectWebSocket, sendCommand } from '../../config/config';
 
 export default function JoystickController() {
   const padRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [servoValues, setServoValues] = useState({ servo0: 0, servo1: 0 });
+
+  useEffect(() => {
+    connectWebSocket('ws://localhost:8001'); // or your ngrok domain
+  }, []);
+
+  useEffect(() => {
+    if (dragging) {
+      sendCommand({ type: 'joystick', payload: servoValues });
+    }
+  }, [servoValues, dragging]);
 
   const handleMouseDown = (e) => {
     setDragging(true);
@@ -44,7 +55,7 @@ export default function JoystickController() {
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
       servo0: normalizedX,
-      servo1: -normalizedY // invert Y for natural direction
+      servo1: -normalizedY
     });
   };
 
@@ -77,17 +88,12 @@ export default function JoystickController() {
     >
       <div
         className="joystick-knob"
-        style={{
-          transform: `translate(${position.x}px, ${position.y}px)`
-        }}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
       />
-
-      {/* D-pad Arrows */}
       <button onClick={() => handleClick('left')} className="joystick-arrow left">⬅️</button>
       <button onClick={() => handleClick('right')} className="joystick-arrow right">➡️</button>
       <button onClick={() => handleClick('up')} className="joystick-arrow up">⬆️</button>
       <button onClick={() => handleClick('down')} className="joystick-arrow down">⬇️</button>
-
       <div className="joystick-info">
         <div>Servo0 (horizontal): {servoValues.servo0}</div>
         <div>Servo1 (vertical): {servoValues.servo1}</div>
