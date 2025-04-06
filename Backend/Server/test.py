@@ -85,26 +85,38 @@ def test_Servo():
     import time
     from servo import Servo
     servo = Servo()
+
+    SAFE_MIN = 70   # safer than 50
+    SAFE_MAX = 110  # safer than 150
+    CENTER = 90
+
     try:
-        print ("Program is starting ...")
+        print("Starting servo test safely...")
+        servo.set_servo_pwm('0', CENTER)
+        servo.set_servo_pwm('1', CENTER)
+        time.sleep(1)
+
         while True:
-            for i in range(50,110,1):
-                servo.set_servo_pwm('0',i)
-                time.sleep(0.01)
-            for i in range(110,50,-1):
-                servo.set_servo_pwm('0',i)
-                time.sleep(0.01)
-            for i in range(80,150,1):
-                servo.set_servo_pwm('1',i)
-                time.sleep(0.01)
-            for i in range(150,80,-1):
-                servo.set_servo_pwm('1',i)
-                time.sleep(0.01)   
+            for i in range(SAFE_MIN, SAFE_MAX + 1, 1):
+                servo.set_servo_pwm('0', i)
+                time.sleep(0.02)
+            for i in range(SAFE_MAX, SAFE_MIN - 1, -1):
+                servo.set_servo_pwm('0', i)
+                time.sleep(0.02)
+
+            for i in range(SAFE_MIN, SAFE_MAX + 1, 1):
+                servo.set_servo_pwm('1', i)
+                time.sleep(0.02)
+            for i in range(SAFE_MAX, SAFE_MIN - 1, -1):
+                servo.set_servo_pwm('1', i)
+                time.sleep(0.02)
+
     except KeyboardInterrupt:
-        servo.set_servo_pwm('0',90)
-        servo.set_servo_pwm('1',90)
+        servo.set_servo_pwm('0', CENTER)
+        servo.set_servo_pwm('1', CENTER)
     finally:
-        print ("\nEnd of program")
+        print("\nEnd of program")
+
         
 def test_Adc():
     import time
