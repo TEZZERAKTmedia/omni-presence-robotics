@@ -10,11 +10,16 @@ async def websocket_handler(websocket):
     async for message in websocket:
         try:
             data = json.loads(message)
-            client_address = websocket.remote_address
-            # Pack the data like TCP would have
-            shared_queue.put((client_address, message))
+            print("Received via WebSocket:", data)
+
+            # Instead of replying to websocket client,
+            # forward to the command server's TCP client
+            if shared_queue is not None:
+                shared_queue.put(("websocket_ui", message))
+
         except Exception as e:
             print("WebSocket error:", e)
+
 
 async def start_ws_server(queue_ref):
     global shared_queue
