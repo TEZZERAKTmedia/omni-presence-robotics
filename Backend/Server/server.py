@@ -1,26 +1,26 @@
-import socket  # Import the socket module for network communication
-import fcntl   # Import the fcntl module for I/O control
-import struct  # Import the struct module for packing and unpacking data
+import socket
+import fcntl
+import struct
 import asyncio
 import threading
-from tcp_server import TCPServer  # Import the TCPServer class from the tcp_server module
-import websocket_server
+import json
 
+from tcp_server import TCPServer
+import websocket_server
+from joystick_motor_controller import drive_from_joystick  # 🧠 New modular controller
 
 
 class Server:
     def __init__(self):
-        """Initialize the TankServer class."""
-        self.ip_address = self.get_interface_ip()  # Get the IP address of the network interface
-        self.command_server = TCPServer()          # Initialize the command server
-        self.video_server = TCPServer()            # Initialize the video server
-        self.command_server_is_busy = False        # Flag to indicate whether the command server is busy
-        self.video_server_is_busy = False          # Flag to indicate whether the video server is busy
+        self.ip_address = self.get_interface_ip()
+        self.command_server = TCPServer()
+        self.video_server = TCPServer()
+        self.command_server_is_busy = False
+        self.video_server_is_busy = False
 
     def get_interface_ip(self) -> str:
-        """Get the IP address of the wlan0 interface."""
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Create a UDP socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             ip = socket.inet_ntoa(fcntl.ioctl(
                 s.fileno(),
                 0x8915,  # SIOCGIFADDR
@@ -28,93 +28,56 @@ class Server:
             )[20:24])
             return ip
         except Exception as e:
-            print(f"Error getting IP address: {e}")
-            return "127.0.0.1"  # Default to localhost if an error occurs
+            print(f"[ERROR] Could not get IP address: {e}")
+            return "127.0.0.1"
 
-    def start_tcp_servers(self, command_port: int = 5000, video_port: int = 8000, max_clients: int = 1, listen_count: int = 1) -> None:
-        """Start the TCP servers on specified ports."""
+    def start_tcp_servers(self, command_port=5000, video_port=8000, max_clients=1, listen_count=1):
         try:
-            self.command_server.start(self.ip_address, command_port, max_clients, listen_count)  # Start the command server
-            self.video_server.start(self.ip_address, video_port, max_clients, listen_count)      # Start the video server
+            self.command_server.start(self.ip_address, command_port, max_clients, listen_count)
+            self.video_server.start(self.ip_address, video_port, max_clients, listen_count)
         except Exception as e:
-            print(f"Error starting TCP servers: {e}")
+            print(f"[ERROR] Starting TCP servers: {e}")
 
-    def stop_tcp_servers(self) -> None:
-        """Stop the TCP servers."""
+    def stop_tcp_servers(self):
         try:
-            self.command_server.close()  # Close the command server
-            self.video_server.close()    # Close the video server
+            self.command_server.close()
+            self.video_server.close()
         except Exception as e:
-            print(f"Error stopping TCP servers: {e}")
+            print(f"[ERROR] Stopping TCP servers: {e}")
 
-    def set_command_server_busy(self, state: bool) -> None:
-        """Set the busy state of the command server."""
-        self.command_server_is_busy = state
-
-    def set_video_server_busy(self, state: bool) -> None:
-        """Set the busy state of the video server."""
-        self.video_server_is_busy = state
-
-    def get_command_server_busy(self) -> bool:
-        """Get the busy state of the command server."""
-        return self.command_server_is_busy
-
-    def get_video_server_busy(self) -> bool:
-        """Get the busy state of the video server."""
-        return self.video_server_is_busy
-
-    def send_data_to_command_client(self, data: bytes, ip_address: str = None) -> None:
-        """Send data to the command server client(s)."""
-        self.set_command_server_busy(True)
+    def send_data_to_command_client(self, data: bytes, ip_address: str = None):
+        self.command_server_is_busy = True
         try:
-            if ip_address is not None:
-                self.command_server.send_to_client(ip_address, data)  # Send data to a specific client
+            if ip_address:
+                self.command_server.send_to_client(ip_address, data)
             else:
-                self.command_server.send_to_all_client(data)         # Send data to all connected clients of the command server
+                self.command_server.send_to_all_client(data)
         except Exception as e:
-            print(e)
+            print(f"[ERROR] Sending to command client: {e}")
         finally:
-            self.set_command_server_busy(False)
+            self.command_server_is_busy = False
 
-    def send_data_to_video_client(self, data: bytes, ip_address: str = None) -> None:
-        """Send data to the video server client(s)."""
-        self.set_video_server_busy(True)
+    def send_data_to_video_client(self, data: bytes, ip_address: str = None):
+        self.video_server_is_busy = True
         try:
-            if ip_address is not None:
-                self.video_server.send_to_client(ip_address, data)  # Send data to a specific client
+            if ip_address:
+                self.video_server.send_to_client(ip_address, data)
             else:
-                self.video_server.send_to_all_client(data)         # Send data to all connected clients of the video server
+                self.video_server.send_to_all_client(data)
         finally:
-            self.set_video_server_busy(False)
+            self.video_server_is_busy = False
 
-    def read_data_from_command_server(self) -> 'queue.Queue':
-        """Read data from the command server's message queue."""
+    def read_data_from_command_server(self):
         return self.command_server.message_queue
 
-    def read_data_from_video_server(self) -> 'queue.Queue':
-        """Read data from the video server's message queue."""
+    def read_data_from_video_server(self):
         return self.video_server.message_queue
 
-    def is_command_server_connected(self) -> bool:
-        """Check if the command server has any active connections."""
-        return self.command_server.active_connections > 0
-
-    def is_video_server_connected(self) -> bool:
-        """Check if the video server has any active connections."""
-        return self.video_server.active_connections > 0
-
-    def get_command_server_client_ips(self) -> list:
-        """Get the list of client IP addresses connected to the command server."""
-        return self.command_server.get_client_ips()
-
-    def get_video_server_client_ips(self) -> list:
-        """Get the list of client IP addresses connected to the video server."""
-        return self.video_server.get_client_ips()
 
 if __name__ == '__main__':
-    print('Program is starting ... ')  # Print a message indicating the start of the program
-    server = Server()              # Create an instance of the TankServer class
-    server.start_tcp_servers(5003, 8003)  # Start the TCP servers on specified ports
+    print("[SERVER] Starting...")
+    server = Server()
+    server.start_tcp_servers(5003, 8003)
 
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
@@ -124,28 +87,38 @@ if __name__ == '__main__':
 
     try:
         while True:
+            # Handle incoming joystick/TCP commands
             cmd_queue = server.read_data_from_command_server()
             if cmd_queue.qsize() > 0:
                 client_address, message = cmd_queue.get()
+                print(f"[INCOMING] {client_address}: {message}")
 
-                print("Received from", client_address, ":", message)
-
-                # server.py
                 if client_address == "websocket_ui":
-                    server.send_data_to_command_client(message.encode())  # Encode to bytes!
-                    print("[FORWARDING JOYSTICK COMMAND TO ROBOT TCP CLIENT]")
+                    try:
+                        data = json.loads(message)
+
+                        if data.get("type") == "joystick":
+                            payload = data.get("payload", {})
+                            print(f"[JOYSTICK] servo0={payload.get('servo0')} servo1={payload.get('servo1')}")
+                            drive_from_joystick(payload.get("servo0", 0), payload.get("servo1", 0))
+                        else:
+                            print(f"[WARN] Unhandled message type: {data.get('type')}")
+
+                    except json.JSONDecodeError:
+                        print("[ERROR] Invalid JSON from WebSocket:", message)
+                    except Exception as e:
+                        print("[ERROR] Failed to handle joystick input:", e)
 
                 else:
-                    # This is a regular TCP message
                     server.send_data_to_command_client(message, client_address)
 
+            # Handle video queue
+            video_queue = server.read_data_from_video_server()
+            if video_queue.qsize() > 0:
+                client_address, message = video_queue.get()
+                print(f"[VIDEO] {client_address}: {message}")
+                server.send_data_to_video_client(message, client_address)
 
-            video_queue = server.read_data_from_video_server()  # Get the video server's message queue
-            if video_queue.qsize() > 0:  # Check if there are messages in the queue
-                client_address, message = video_queue.get()  # Get a message from the queue
-                print(client_address, message)  # Print the client address and message
-                server.send_data_to_video_client(message, client_address)  # Send the message back to the client
-
-    except KeyboardInterrupt:  # Catch keyboard interrupt
-        print("Received interrupt signal, stopping server...")  # Print interrupt information
-        server.stop_tcp_servers()  # Stop the TCP servers
+    except KeyboardInterrupt:
+        print("[SHUTDOWN] Stopping server...")
+        server.stop_tcp_servers()
