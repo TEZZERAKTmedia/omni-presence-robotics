@@ -1,8 +1,25 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  touch-action: none; /* prevent mobile browser bounce on touch */
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: #111; /* Optional dark bg for better contrast */
 }
 
 .logo {
@@ -39,4 +56,58 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.joystick-layout {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100vh;
+  margin-top: -10%;
+  background-color: #0a0a0a; /* optional background color */
+}
+
+
+.robot-ui {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  
+  flex-wrap: wrap; /* Optional: wraps on smaller screens */
+}
+
+.robot-ui > * {
+  flex: none;
+}
+
+/* Joystick Styles (optional if needed) */
+.joystick {
+  width: 200px;
+  height: 200px;
+}
+
+/* Video Feed Box */
+.video-feed {
+  width: 200px; /* 👈 Set your desired width */
+  max-width: 90vw;
+  height: 200px;
+  border: 4px solid #4caf50;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  margin-top: -20vh;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.video-feed:hover {
+  transform: scale(1.02);
+}
+
+.video-feed img {
+  width: 100%;
+  height: auto;
+  display: block;
 }

@@ -7,8 +7,8 @@ import json
 
 from tcp_server import TCPServer
 import websocket_server
-from joystick_motor_controller import drive_from_joystick  # 🧠 New modular controller
-
+from joystick_motor_controller import drive_from_joystick
+from camera_servo_controller import control_camera_servo  # 🆕 New controller
 
 class Server:
     def __init__(self):
@@ -23,7 +23,7 @@ class Server:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             ip = socket.inet_ntoa(fcntl.ioctl(
                 s.fileno(),
-                0x8915,  # SIOCGIFADDR
+                0x8915,
                 struct.pack('256s', b'wlan0'[:15])
             )[20:24])
             return ip
@@ -87,7 +87,6 @@ if __name__ == '__main__':
 
     try:
         while True:
-            # Handle incoming joystick/TCP commands
             cmd_queue = server.read_data_from_command_server()
             if cmd_queue.qsize() > 0:
                 client_address, message = cmd_queue.get()
@@ -96,23 +95,28 @@ if __name__ == '__main__':
                 if client_address == "websocket_ui":
                     try:
                         data = json.loads(message)
+                        payload = data.get("payload", {})
+                        msg_type = data.get("type")
 
-                        if data.get("type") == "joystick":
-                            payload = data.get("payload", {})
+                        if msg_type == "joystick":
                             print(f"[JOYSTICK] servo0={payload.get('servo0')} servo1={payload.get('servo1')}")
                             drive_from_joystick(payload.get("servo0", 0), payload.get("servo1", 0))
+
+                        elif msg_type == "camera-servo":
+                            print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
+                            control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
+
                         else:
-                            print(f"[WARN] Unhandled message type: {data.get('type')}")
+                            print(f"[WARN] Unhandled message type: {msg_type}")
 
                     except json.JSONDecodeError:
                         print("[ERROR] Invalid JSON from WebSocket:", message)
                     except Exception as e:
-                        print("[ERROR] Failed to handle joystick input:", e)
+                        print("[ERROR] Failed to handle input:", e)
 
                 else:
                     server.send_data_to_command_client(message, client_address)
 
-            # Handle video queue
             video_queue = server.read_data_from_video_server()
             if video_queue.qsize() > 0:
                 client_address, message = video_queue.get()
