@@ -4,11 +4,14 @@ import struct
 import asyncio
 import threading
 import json
+import base64
+import websockets
 
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
-from camera_servo_controller import control_camera_servo  # 🆕 New controller
+from camera_servo_controller import control_camera_servo
+from camera import Camera  # 📷 Video camera source
 
 class Server:
     def __init__(self):
@@ -74,16 +77,44 @@ class Server:
         return self.video_server.message_queue
 
 
+async def start_video_ws_server():
+    camera = Camera()
+    camera.start_stream()
+
+    async def stream_handler(websocket, path):
+        print("📡 Video client connected")
+        try:
+            while True:
+                frame = camera.get_frame()
+                encoded = base64.b64encode(frame).decode('utf-8')
+                await websocket.send(encoded)
+                await asyncio.sleep(0.05)
+        except websockets.exceptions.ConnectionClosed:
+            print("❌ Video client disconnected")
+        except Exception as e:
+            print("🚨 Video stream error:", e)
+
+    return await websockets.serve(stream_handler, "0.0.0.0", 8765)
+
+
 if __name__ == '__main__':
     print("[SERVER] Starting...")
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
+    # 🧵 WebSocket input server
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
     )
     ws_thread.start()
+
+    # 🧵 WebSocket video stream
+    video_ws_thread = threading.Thread(
+        target=lambda: asyncio.run(start_video_ws_server()),
+        daemon=True
+    )
+    video_ws_thread.start()
 
     try:
         while True:
