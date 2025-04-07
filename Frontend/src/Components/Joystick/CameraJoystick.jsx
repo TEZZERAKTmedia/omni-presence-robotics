@@ -14,7 +14,8 @@ export default function JoystickController() {
 
   useEffect(() => {
     if (dragging) {
-      sendCommand({ type: 'joystick', payload: servoValues });
+        sendCommand({ type: 'camera-servo', payload: servoValues });
+
     }
   }, [servoValues, dragging]);
   const handleTouchStart = (e) => {
@@ -113,7 +114,7 @@ export default function JoystickController() {
       <button onClick={() => handleClick('right')} className="joystick-arrow right">➡️</button>
       <button onClick={() => handleClick('up')} className="joystick-arrow up">⬆️</button>
       <button onClick={() => handleClick('down')} className="joystick-arrow down">⬇️</button>
-      {/* Optional: Display servo values 
+            {/* Optional: Display servo values 
       <div className="joystick-info">
         <div>Servo0 (horizontal): {servoValues.servo0}</div>
         <div>Servo1 (vertical): {servoValues.servo1}</div>
