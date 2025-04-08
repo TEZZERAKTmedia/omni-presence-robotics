@@ -1,4 +1,5 @@
 PyQt5
 Pillow
-opencv-python-headless
 numpy
+opencv-python-headless
+

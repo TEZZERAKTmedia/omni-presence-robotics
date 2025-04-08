@@ -2,20 +2,28 @@ import React, { useRef, useState, useEffect } from "react";
 
 export default function FloorPlanEditor() {
   const [imageSrc, setImageSrc] = useState(null);
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const canvasRef = useRef(null);
+  const [binaryGrid, setBinaryGrid] = useState(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
+  const imageCanvasRef = useRef(null);
+  const boundaryCanvasRef = useRef(null);
   const containerRef = useRef(null);
 
+  // 1. Upload image
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setImageSrc(reader.result);
+    reader.onload = () => {
+      console.log("✅ Image loaded into memory.");
+      setImageSrc(reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
-  const drawImage = () => {
-    const canvas = canvasRef.current;
+  // 2. Draw image and compute grid
+  const drawImageToCanvas = () => {
+    const canvas = imageCanvasRef.current;
     const ctx = canvas.getContext("2d");
     const img = new Image();
 
@@ -25,124 +33,108 @@ export default function FloorPlanEditor() {
         containerRef.current.clientHeight / img.height
       );
 
-      const width = img.width * scale;
-      const height = img.height * scale;
-
+      const width = Math.floor(img.width * scale);
+      const height = Math.floor(img.height * scale);
       canvas.width = width;
       canvas.height = height;
-      setImageSize({ width, height });
+      setCanvasSize({ width, height });
 
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
+      console.log(`🖼️ Image drawn at ${width}x${height}`);
+      computeBinaryGrid(ctx, width, height);
     };
 
     img.src = imageSrc;
   };
 
   useEffect(() => {
-    if (imageSrc) drawImage();
+    if (imageSrc) drawImageToCanvas();
   }, [imageSrc]);
 
-  const generateFromImage = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const { width, height } = canvas;
-
+  // 3. Binary map from pixels
+  const computeBinaryGrid = (ctx, width, height) => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const pixels = imageData.data;
-
-    const map = []; // binary grid: 1 = open (white), 0 = wall (black)
+    const grid = [];
+    let darkCount = 0;
 
     for (let y = 0; y < height; y++) {
       const row = [];
       for (let x = 0; x < width; x++) {
         const i = (y * width + x) * 4;
         const [r, g, b] = [pixels[i], pixels[i + 1], pixels[i + 2]];
-        const isWhite = r > 200 && g > 200 && b > 200;
-        row.push(isWhite ? 1 : 0);
+        const brightness = (r + g + b) / 3;
+        const isWall = brightness < 220; // More lenient threshold
+        row.push(isWall ? 1 : 0);
+        if (isWall) darkCount++;
       }
-      map.push(row);
+      grid.push(row);
     }
 
-    const visited = Array.from({ length: height }, () => Array(width).fill(false));
-    const regions = [];
+    setBinaryGrid(grid);
+    console.log(`📊 Binary grid: ${height} rows x ${grid[0].length} cols`);
+    console.log(`🧱 Wall pixels: ${darkCount}`);
+  };
 
-    const floodFill = (sx, sy) => {
-      const queue = [[sx, sy]];
-      const region = [];
-      let minX = sx,
-        minY = sy,
-        maxX = sx,
-        maxY = sy;
+  // 4. Draw only the edge of black areas
+  const drawBoundaryMap = () => {
+    if (!binaryGrid) return;
 
-      while (queue.length) {
-        const [x, y] = queue.pop();
-        if (
-          x < 0 || y < 0 || x >= width || y >= height ||
-          visited[y][x] || map[y][x] === 0
-        )
-          continue;
+    const { width, height } = canvasSize;
+    const canvas = boundaryCanvasRef.current;
+    const ctx = canvas.getContext("2d");
 
-        visited[y][x] = true;
-        region.push([x, y]);
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0, 0, width, height);
 
-        queue.push([x + 1, y]);
-        queue.push([x - 1, y]);
-        queue.push([x, y + 1]);
-        queue.push([x, y - 1]);
-      }
+    let edgeCount = 0;
+    ctx.fillStyle = "#00f5d4"; // Cyan/green for contrast
 
-      return { region, bounds: { minX, minY, maxX, maxY } };
-    };
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (!visited[y][x] && map[y][x] === 1) {
-          const { region, bounds } = floodFill(x, y);
-          if (region.length > 500) {
-            regions.push(bounds);
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        if (binaryGrid[y][x] === 1) {
+          const top = binaryGrid[y - 1][x];
+          const bottom = binaryGrid[y + 1][x];
+          const left = binaryGrid[y][x - 1];
+          const right = binaryGrid[y][x + 1];
+          if ([top, bottom, left, right].some((v) => v === 0)) {
+            ctx.fillRect(x, y, 1, 1);
+            edgeCount++;
           }
         }
       }
     }
 
-    drawImage(); // Redraw base image first
-
-    // Draw detected regions
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
-    regions.forEach(({ minX, minY, maxX, maxY }) => {
-      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-    });
-
-    console.log("Detected regions:", regions);
+    console.log(`🧭 Drawn ${edgeCount} edge pixels on boundary canvas`);
   };
 
   return (
-    <div className="w-full h-[90vh] flex flex-col items-center justify-center">
+    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center p-4">
       <input
         type="file"
         accept="image/*"
         onChange={handleFileUpload}
         className="mb-4"
       />
+
       {imageSrc && (
         <button
-          onClick={generateFromImage}
-          className="mb-4 px-4 py-2 bg-green-600 text-white rounded"
+          onClick={drawBoundaryMap}
+          className="mb-6 px-4 py-2 bg-green-700 rounded"
         >
-          Auto Generate Map from Image
+          Generate Vector Map
         </button>
       )}
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-6xl h-[70vh] border border-gray-400"
-      >
-        <canvas ref={canvasRef} className="w-full h-full" />
+
+      <div ref={containerRef} className="w-full max-w-4xl h-[300px] border mb-4">
+        <canvas ref={imageCanvasRef} className="w-full h-full" />
+      </div>
+
+      <h2 className="text-xl font-bold mb-2">🧭 Boundary Vector Map</h2>
+      <div className="border bg-neutral-900 p-2">
+        <canvas ref={boundaryCanvasRef} />
       </div>
     </div>
   );
