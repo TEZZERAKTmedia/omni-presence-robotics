@@ -77,11 +77,12 @@ class Server:
         return self.video_server.message_queue
 
 
+camera = Camera()
 ### 📹 WebSocket video streaming server
 async def start_video_ws_server():
     print("🧠 Registered stream_handler with correct signature")
 
-    camera = Camera()
+   
 
     async def stream_handler(websocket, path):
         print("📡 Video client connected")
