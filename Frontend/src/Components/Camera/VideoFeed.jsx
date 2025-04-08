@@ -1,18 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
-import './Video.css';
+import './video.css';
 
 const VideoFeed = () => {
   const [imageSrc, setImageSrc] = useState('');
   const containerRef = useRef(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8765'); // Update IP
+    const socket = new WebSocket('ws://localhost:8765');
+
+    socket.onopen = () => {
+      console.log('[WebSocket] Connected to video stream');
+    };
+
     socket.onmessage = (event) => {
-      setImageSrc(`data:image/jpeg;base64,${event.data}`);
+      if (event.data && event.data.length > 100) {
+        setImageSrc(`data:image/jpeg;base64,${event.data}`);
+      }
     };
+
     socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error('[WebSocket] Video stream error:', error);
     };
+
+    socket.onclose = () => {
+      console.warn('[WebSocket] Disconnected from video stream');
+    };
+
     return () => socket.close();
   }, []);
 
@@ -31,7 +44,11 @@ const VideoFeed = () => {
       onClick={toggleFullscreen}
       title="Click to toggle fullscreen"
     >
-      <img src={imageSrc} alt="Live Feed" />
+      {imageSrc ? (
+        <img src={imageSrc} alt="Live Feed" />
+      ) : (
+        <p style={{ color: '#fff', textAlign: 'center' }}>Waiting for video stream...</p>
+      )}
     </div>
   );
 };
