@@ -2,13 +2,15 @@
     "name": "omni-presence-robotic-cat-toy",
     "version": "1.0.0",
     "scripts": {
-      "frontend": "npm run dev --prefix ./Frontend",
-      "frontend:build": "npm run build --prefix ./Frontend",
-      "backend": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server.py'",
-      "start": "concurrently \"npm run frontend\" \"npm run backend\""
+        "frontend": "npm run dev --prefix ./Frontend",
+        "frontend:build": "npm run build --prefix ./Frontend",
+        "backend": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server.py'",
+        "start": "concurrently \"npm run frontend\" \"npm run backend\""
     },
     "devDependencies": {
-      "concurrently": "^8.0.1"
+        "concurrently": "^8.0.1"
+    },
+    "dependencies": {
+        "react-router-dom": "^7.5.0"
     }
-  }
-  
+}

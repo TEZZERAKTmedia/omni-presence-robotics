@@ -1,21 +1,20 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Joystick from './Components/Joystick/Joystick'
-import CameraJoystick from './Components/Joystick/CameraJoystick'
-import VideoFeed from './Components/Camera/VideoFeed'
+// App.jsx
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Home from './Pages/Home';
+import Editor from './Pages/FloorMapping';
 
-function App() {
-  
-
+export default function App() {
   return (
-    <div className='robot-ui'>
-	<Joystick />
-  <VideoFeed />
-  <CameraJoystick />
-    </ div>
-  )
-}
+    <Router>
+      <nav className="p-4 flex gap-4 bg-gray-200">
+        <Link to="/">Home</Link>
+        <Link to="/editor">Editor</Link>
+      </nav>
 
-export default App
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/editor" element={<Editor />} />
+      </Routes>
+    </Router>
+  );
+}

@@ -11,7 +11,7 @@ from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
 from camera_servo_controller import control_camera_servo
-from camera import Camera  # 📷 Video camera source
+from camera import Camera  # 📷 New camera with capture_frame()
 
 class Server:
     def __init__(self):
@@ -77,15 +77,15 @@ class Server:
         return self.video_server.message_queue
 
 
+### ✅ WebSocket server function (now correctly defined)
 async def start_video_ws_server():
     camera = Camera()
-    camera.start_stream()
 
     async def stream_handler(websocket, path):
         print("📡 Video client connected")
         try:
             while True:
-                frame = camera.get_frame()
+                frame = camera.capture_frame()
                 encoded = base64.b64encode(frame).decode('utf-8')
                 await websocket.send(encoded)
                 await asyncio.sleep(0.05)
@@ -94,9 +94,11 @@ async def start_video_ws_server():
         except Exception as e:
             print("🚨 Video stream error:", e)
 
-    return await websockets.serve(stream_handler, "0.0.0.0", 8765)
+    print("📺 Starting WebSocket video stream on port 8765")
+    await websockets.serve(stream_handler, "0.0.0.0", 8765)
 
 
+### ✅ Main entrypoint
 if __name__ == '__main__':
     print("[SERVER] Starting...")
     server = Server()
