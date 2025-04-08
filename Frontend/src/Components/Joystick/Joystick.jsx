@@ -43,7 +43,7 @@ export default function JoystickController() {
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
       servo0: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
-      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : -normY
+      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : normY
     });
   };
 
