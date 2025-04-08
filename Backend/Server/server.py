@@ -95,7 +95,11 @@ async def start_video_ws_server():
             print("🚨 Video stream error:", e)
 
     print("📺 Starting WebSocket video stream on port 8765")
-    await websockets.serve(stream_handler, "0.0.0.0", 8765)
+
+    # 👇 This is the missing piece
+    async with websockets.serve(stream_handler, "0.0.0.0", 8765):
+        await asyncio.Future()  # Keeps this coroutine alive
+
 
 
 ### ✅ Main entrypoint
