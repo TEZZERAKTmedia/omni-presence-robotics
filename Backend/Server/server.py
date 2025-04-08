@@ -11,7 +11,7 @@ from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
 from camera_servo_controller import control_camera_servo
-from camera import Camera  # 📷 New camera with capture_frame()
+from camera import Camera  # Uses capture_frame()
 
 class Server:
     def __init__(self):
@@ -77,11 +77,11 @@ class Server:
         return self.video_server.message_queue
 
 
-### ✅ WebSocket server function (now correctly defined)
+### 📹 WebSocket video streaming server
 async def start_video_ws_server():
     camera = Camera()
 
-    async def stream_handler(websocket, path):  # ✅ FIXED: added `path`
+    async def stream_handler(websocket, path):
         print("📡 Video client connected")
         try:
             while True:
@@ -95,28 +95,34 @@ async def start_video_ws_server():
             print("🚨 Video stream error:", e)
 
     print("📺 Starting WebSocket video stream on port 8765")
-
     async with websockets.serve(stream_handler, "0.0.0.0", 8765):
-        await asyncio.Future()
+        await asyncio.Future()  # Keep server alive
 
 
+### ✅ Run video WebSocket in a separate event loop thread
+def run_video_server_in_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_video_ws_server())
+    loop.run_forever()
 
-### ✅ Main entrypoint
+
+### 🧠 Main server
 if __name__ == '__main__':
     print("[SERVER] Starting...")
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
-    # 🧵 WebSocket input server
+    # 🎮 WebSocket input server (8001)
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
     )
     ws_thread.start()
 
-    # 🧵 WebSocket video stream
+    # 📹 Video WebSocket stream (8765)
     video_ws_thread = threading.Thread(
-        target=lambda: asyncio.run(start_video_ws_server()),
+        target=run_video_server_in_thread,
         daemon=True
     )
     video_ws_thread.start()
@@ -149,7 +155,6 @@ if __name__ == '__main__':
                         print("[ERROR] Invalid JSON from WebSocket:", message)
                     except Exception as e:
                         print("[ERROR] Failed to handle input:", e)
-
                 else:
                     server.send_data_to_command_client(message, client_address)
 
