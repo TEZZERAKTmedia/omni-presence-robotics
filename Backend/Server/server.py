@@ -13,6 +13,38 @@ from joystick_motor_controller import drive_from_joystick
 from camera_servo_controller import control_camera_servo
 from camera import Camera  # Uses capture_frame()
 
+# Global camera instance
+camera = Camera()
+
+### 📹 Top-level WebSocket video handler
+async def stream_handler(websocket, path):
+    print("📡 Video client connected")
+    try:
+        while True:
+            frame = camera.capture_frame()
+            encoded = base64.b64encode(frame).decode('utf-8')
+            await websocket.send(encoded)
+            await asyncio.sleep(0.05)
+    except websockets.exceptions.ConnectionClosed:
+        print("❌ Video client disconnected")
+    except Exception as e:
+        print("🚨 Video stream error:", e)
+
+### 📺 WebSocket video server
+async def start_video_ws_server():
+    print("📺 Starting WebSocket video stream on port 8765")
+    async with websockets.serve(stream_handler, "0.0.0.0", 8765):
+        await asyncio.Future()  # Keep server alive
+
+
+### 🧵 Run video server in a thread
+def run_video_server_in_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_video_ws_server())
+    loop.run_forever()
+
+
 class Server:
     def __init__(self):
         self.ip_address = self.get_interface_ip()
@@ -77,53 +109,20 @@ class Server:
         return self.video_server.message_queue
 
 
-camera = Camera()
-### 📹 WebSocket video streaming server
-async def start_video_ws_server():
-    print("🧠 Registered stream_handler with correct signature")
-
-   
-
-    async def stream_handler(websocket, path):
-        print("📡 Video client connected")
-        try:
-            while True:
-                frame = camera.capture_frame()
-                encoded = base64.b64encode(frame).decode('utf-8')
-                await websocket.send(encoded)
-                await asyncio.sleep(0.05)
-        except websockets.exceptions.ConnectionClosed:
-            print("❌ Video client disconnected")
-        except Exception as e:
-            print("🚨 Video stream error:", e)
-
-    print("📺 Starting WebSocket video stream on port 8765")
-    async with websockets.serve(stream_handler, "0.0.0.0", 8765):
-        await asyncio.Future()  # Keep server alive
-
-
-### ✅ Run video WebSocket in a separate event loop thread
-def run_video_server_in_thread():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_video_ws_server())
-    loop.run_forever()
-
-
-### 🧠 Main server
+### 🧠 Main entrypoint
 if __name__ == '__main__':
     print("[SERVER] Starting...")
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
-    # 🎮 WebSocket input server (8001)
+    # 🎮 Command WebSocket server
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
     )
     ws_thread.start()
 
-    # 📹 Video WebSocket stream (8765)
+    # 📹 Video stream WebSocket server
     video_ws_thread = threading.Thread(
         target=run_video_server_in_thread,
         daemon=True
