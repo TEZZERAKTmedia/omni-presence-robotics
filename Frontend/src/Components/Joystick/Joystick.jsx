@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import './Joystick.css';
 import { connectWebSocket, sendCommand } from '../../config/config';
 
+const DEAD_ZONE = 0.05;
+const UPDATE_INTERVAL = 100;
+
 export default function JoystickController() {
   const padRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -9,47 +12,16 @@ export default function JoystickController() {
   const [servoValues, setServoValues] = useState({ servo0: 0, servo1: 0 });
 
   useEffect(() => {
-    connectWebSocket('ws://localhost:8001'); // or your ngrok domain
+    connectWebSocket('ws://localhost:8001');
   }, []);
 
   useEffect(() => {
-    if (dragging) {
+    if (!dragging) return;
+    const interval = setInterval(() => {
       sendCommand({ type: 'joystick', payload: servoValues });
-    }
-  }, [servoValues, dragging]);
-  const handleTouchStart = (e) => {
-    setDragging(true);
-    updatePosition(e.touches[0]); // get first touch point
-  };
-  
-  const handleTouchMove = (e) => {
-    if (dragging) {
-      updatePosition(e.touches[0]); // use touch instead of mouse
-    }
-  };
-  
-  const handleTouchEnd = () => {
-    setDragging(false);
-    setPosition({ x: 0, y: 0 });
-    setServoValues({ servo0: 0, servo1: 0 });
-  };
-
-  const handleMouseDown = (e) => {
-    setDragging(true);
-    updatePosition(e);
-  };
-
-  const handleMouseUp = () => {
-    setDragging(false);
-    setPosition({ x: 0, y: 0 });
-    setServoValues({ servo0: 0, servo1: 0 });
-  };
-
-  const handleMouseMove = (e) => {
-    if (dragging) {
-      updatePosition(e);
-    }
-  };
+    }, UPDATE_INTERVAL);
+    return () => clearInterval(interval);
+  }, [dragging, servoValues]);
 
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
@@ -65,60 +37,40 @@ export default function JoystickController() {
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
 
-    const normalizedX = +(clampedX / radius).toFixed(2);
-    const normalizedY = +(clampedY / radius).toFixed(2);
+    const normX = +(clampedX / radius).toFixed(2);
+    const normY = +(clampedY / radius).toFixed(2);
 
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: normalizedX,
-      servo1: -normalizedY
+      servo0: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
+      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : -normY
     });
   };
 
-  const handleClick = (direction) => {
-    let update = { servo0: 0, servo1: 0 };
-    switch (direction) {
-      case 'left': update.servo0 = -1; break;
-      case 'right': update.servo0 = 1; break;
-      case 'up': update.servo1 = 1; break;
-      case 'down': update.servo1 = -1; break;
-    }
-    setServoValues(update);
-    console.log('Manual D-pad click:', update);
+  const reset = () => {
+    setDragging(false);
+    setPosition({ x: 0, y: 0 });
+    setServoValues({ servo0: 0, servo1: 0 });
+    sendCommand({ type: 'joystick', payload: { servo0: 0, servo1: 0 } });
   };
-
-  useEffect(() => {
-    if (dragging) {
-      console.log('Joystick movement:', servoValues);
-    }
-  }, [servoValues, dragging]);
 
   return (
     <div
       ref={padRef}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       className="joystick-container"
+      onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
+      onMouseMove={(e) => dragging && updatePosition(e)}
+      onMouseUp={reset}
+      onMouseLeave={reset}
+      onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
+      onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
+      onTouchEnd={reset}
     >
-      <div
-        className="joystick-knob"
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-      />
-      <button onClick={() => handleClick('left')} className="joystick-arrow left">⬅️</button>
-      <button onClick={() => handleClick('right')} className="joystick-arrow right">➡️</button>
-      <button onClick={() => handleClick('up')} className="joystick-arrow up">⬆️</button>
-      <button onClick={() => handleClick('down')} className="joystick-arrow down">⬇️</button>
-      {/* Optional: Display servo values 
-      <div className="joystick-info">
-        <div>Servo0 (horizontal): {servoValues.servo0}</div>
-        <div>Servo1 (vertical): {servoValues.servo1}</div>
-      </div>
-      */}
+      <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
+      <button onClick={() => setServoValues({ servo0: -1, servo1: 0 })} className="joystick-arrow left">⬅️</button>
+      <button onClick={() => setServoValues({ servo0: 1, servo1: 0 })} className="joystick-arrow right">➡️</button>
+      <button onClick={() => setServoValues({ servo0: 0, servo1: 1 })} className="joystick-arrow up">⬆️</button>
+      <button onClick={() => setServoValues({ servo0: 0, servo1: -1 })} className="joystick-arrow down">⬇️</button>
     </div>
   );
 }
