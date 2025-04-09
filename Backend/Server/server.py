@@ -5,7 +5,7 @@ import asyncio
 import threading
 import json
 import websockets
-
+from infrared import Infrared 
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
@@ -17,6 +17,7 @@ from camera_streamer import CameraStreamer
 global_camera = Camera()
 streamer = CameraStreamer(global_camera)
 streamer.start()
+infrared = Infrared()
 
 # ----------------------------
 # Robust WebSocket stream handler
@@ -168,10 +169,17 @@ if __name__ == '__main__':
                         data = json.loads(message)
                         payload = data.get("payload", {})
                         msg_type = data.get("type")
-
                         if msg_type == "joystick":
-                            print(f"[JOYSTICK] servo0={payload.get('servo0')} servo1={payload.get('servo1')}")
-                            drive_from_joystick(payload.get("servo0", 0), payload.get("servo1", 0))
+                                steer = payload.get("servo0", 0)
+                                throttle = payload.get("servo1", 0)
+
+                                if throttle > 0 and infrared.read_all_infrared() != 0:
+                                    print("[INFRARED] Obstacle detected. Blocking forward movement.")
+                                    throttle = 0
+
+                                print(f"[JOYSTICK] steer={steer}, throttle={throttle}")
+                                drive_from_joystick(steer, throttle)
+
                         elif msg_type == "camera-servo":
                             print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
                             control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
