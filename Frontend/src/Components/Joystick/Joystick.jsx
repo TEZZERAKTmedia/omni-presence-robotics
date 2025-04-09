@@ -27,26 +27,38 @@ export default function JoystickController() {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-
+  
     const x = e.clientX - centerX;
     const y = e.clientY - centerY;
     const radius = rect.width / 2;
-
+  
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
     const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
-
-    const normX = +(clampedX / radius).toFixed(2);
-    const normY = +(clampedY / radius).toFixed(2);
-
+  
+    const normX = +(clampedX / radius).toFixed(2); // steering
+    const normY = +(clampedY / radius).toFixed(2); // throttle
+  
+    const throttle = -(Math.abs(normY) < DEAD_ZONE ? 0 : normY); // invert Y to make up = forward
+    const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
+  
+    // AWD-style differential mixing
+    let leftMotor = throttle + steer;
+    let rightMotor = throttle - steer;
+  
+    // Normalize so neither exceeds ±1
+    const max = Math.max(1, Math.abs(leftMotor), Math.abs(rightMotor));
+    leftMotor /= max;
+    rightMotor /= max;
+  
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
-      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : normY
+      servo0: leftMotor,
+      servo1: rightMotor
     });
   };
-
+  
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
