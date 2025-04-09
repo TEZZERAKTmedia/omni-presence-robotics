@@ -34,8 +34,8 @@ export default function TerrainJoystickController() {
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2); // forward/backward
 
     // Terrain-style tank drive logic
-    let left = yInput + xInput;
-    let right = yInput - xInput;
+    let left = yInput - xInput;
+    let right = yInput + xInput;
 
     // Clamp to range [-1, 1]
     const max = Math.max(1, Math.abs(left), Math.abs(right));
