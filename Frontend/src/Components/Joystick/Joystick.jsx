@@ -38,11 +38,11 @@ export default function JoystickController() {
     const clampedY = distance * Math.sin(angle);
   
     const normX = +(clampedX / radius).toFixed(2); // strafe
-    const normY = +(clampedY / radius).toFixed(2); // forward/backward
+    const normY = (clampedY / radius).toFixed(2); // forward/backward
     const r = 0; // future: rotation control
   
     const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const yInput = -(Math.abs(normY) < DEAD_ZONE ? 0 : normY); // Y inverted
+    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : normY; // Y inverted
     const rotation = r;
   
     // Mecanum drive equations
