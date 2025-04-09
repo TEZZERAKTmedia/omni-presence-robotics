@@ -37,17 +37,13 @@ export default function JoystickController() {
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
 
-    const normX = +(clampedX / radius).toFixed(2); // steering
-    const normY = +(clampedY / radius).toFixed(2); // throttle
-
-    // Apply dead zone
-    const steering = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : -normY; // invert so up = forward
+    const normX = +(clampedX / radius).toFixed(2);
+    const normY = +(clampedY / radius).toFixed(2);
 
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: throttle,   // Apply throttle to all wheels
-      servo1: steering    // Control steering servo
+      servo0: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
+      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : normY
     });
   };
 
@@ -71,10 +67,10 @@ export default function JoystickController() {
       onTouchEnd={reset}
     >
       <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
-      <button onClick={() => setServoValues({ servo0: 0, servo1: -1 })} className="joystick-arrow left">⬅️</button>
-      <button onClick={() => setServoValues({ servo0: 0, servo1: 1 })} className="joystick-arrow right">➡️</button>
-      <button onClick={() => setServoValues({ servo0: 1, servo1: 0 })} className="joystick-arrow up">⬆️</button>
-      <button onClick={() => setServoValues({ servo0: -1, servo1: 0 })} className="joystick-arrow down">⬇️</button>
+      <button onClick={() => setServoValues({ servo0: -1, servo1: 0 })} className="joystick-arrow left">⬅️</button>
+      <button onClick={() => setServoValues({ servo0: 1, servo1: 0 })} className="joystick-arrow right">➡️</button>
+      <button onClick={() => setServoValues({ servo0: 0, servo1: 1 })} className="joystick-arrow up">⬆️</button>
+      <button onClick={() => setServoValues({ servo0: 0, servo1: -1 })} className="joystick-arrow down">⬇️</button>
     </div>
   );
 }
