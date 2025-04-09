@@ -7,8 +7,7 @@ car = Ordinary_Car()
 # Constants
 DEAD_ZONE = 0.1
 MIN_THRESHOLD = 300
-MAX_LINEAR_PWM = 1600
-MAX_TURN_PWM = 2000
+MAX_PWM = 1600
 IDLE_TIMEOUT = 0.5
 
 # State
@@ -22,45 +21,37 @@ def apply_min_threshold(value, threshold=MIN_THRESHOLD):
     else:
         return min(value, -threshold)
 
-def drive_from_joystick(servo0: float, servo1: float):
+def drive_from_joystick(fl: float, fr: float, bl: float, br: float):
     global last_command_time
 
-    # Round inputs to 2 decimals
-    servo0 = round(servo0, 2)
-    servo1 = round(servo1, 2)
+    # Round and apply dead zone
+    def process(val):
+        val = round(val, 2)
+        if abs(val) < DEAD_ZONE:
+            return 0
+        return val
 
-    # Apply dead zone
-    if abs(servo0) < DEAD_ZONE:
-        servo0 = 0
-    if abs(servo1) < DEAD_ZONE:
-        servo1 = 0
+    fl = process(fl)
+    fr = process(fr)
+    bl = process(bl)
+    br = process(br)
 
-    # If no input, stop
-    if servo0 == 0 and servo1 == 0:
+    # If all are zero, stop
+    if fl == 0 and fr == 0 and bl == 0 and br == 0:
         stop()
         return
 
-    # Turning boost if no forward motion
-    if abs(servo1) < DEAD_ZONE and abs(servo0) > 0:
-        left_speed = int(-servo0 * MAX_TURN_PWM)
-        right_speed = int(servo0 * MAX_TURN_PWM)
-    else:
-        # Regular differential drive logic
-        x = servo0
-        y = servo1
-        left_speed = int((y + x) * MAX_LINEAR_PWM)
-        right_speed = int((y - x) * MAX_LINEAR_PWM)
+    # Scale and apply threshold
+    def scale(val):
+        return apply_min_threshold(int(val * MAX_PWM))
 
-    # Clamp output
-    left_speed = max(min(left_speed, MAX_TURN_PWM), -MAX_TURN_PWM)
-    right_speed = max(min(right_speed, MAX_TURN_PWM), -MAX_TURN_PWM)
+    fl_pwm = scale(fl)
+    fr_pwm = scale(fr)
+    bl_pwm = scale(bl)
+    br_pwm = scale(br)
 
-    # Enforce minimum power
-    left_speed = apply_min_threshold(left_speed)
-    right_speed = apply_min_threshold(right_speed)
-
-    print(f"[JOYSTICK DRIVE] L: {left_speed}, R: {right_speed}")
-    car.set_motor_model(left_speed, left_speed, right_speed, right_speed)
+    print(f"[MECANUM] FL: {fl_pwm}, FR: {fr_pwm}, BL: {bl_pwm}, BR: {br_pwm}")
+    car.set_motor_model(fl_pwm, bl_pwm, fr_pwm, br_pwm)
     last_command_time = time.time()
 
 def stop():

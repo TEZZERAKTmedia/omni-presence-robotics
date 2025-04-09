@@ -169,17 +169,25 @@ if __name__ == '__main__':
                         data = json.loads(message)
                         payload = data.get("payload", {})
                         msg_type = data.get("type")
+                        if throttle > 0 and infrared.read_all_infrared() != 0:
+                            print("[INFRARED] Obstacle detected. Blocking forward movement.")
+                            throttle = 0
+
                         if msg_type == "joystick":
-                                steer = payload.get("servo0", 0)
-                                throttle = payload.get("servo1", 0)
+                                fl = payload.get("frontLeft", 0)
+                                fr = payload.get("frontRight", 0)
+                                bl = payload.get("backLeft", 0)
+                                br = payload.get("backRight", 0)
 
-                                if throttle > 0 and infrared.read_all_infrared() != 0:
+                                # Simple obstacle avoidance (optional: only check if all motors are moving forward-ish)
+                                if (fl > 0 or fr > 0 or bl > 0 or br > 0) and infrared.read_all_infrared() != 0:
                                     print("[INFRARED] Obstacle detected. Blocking forward movement.")
-                                    throttle = 0
+                                    fl = fr = bl = br = 0
 
-                                print(f"[JOYSTICK] steer={steer}, throttle={throttle}")
-                                drive_from_joystick(steer, throttle)
+                                print(f"[JOYSTICK] FL={fl}, FR={fr}, BL={bl}, BR={br}")
+                                drive_from_joystick(fl, fr, bl, br)
 
+ 
                         elif msg_type == "camera-servo":
                             print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
                             control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
