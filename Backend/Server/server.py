@@ -8,7 +8,9 @@ import websockets
 from infrared import Infrared 
 from tcp_server import TCPServer
 import websocket_server
-from joystick_motor_controller import drive_from_joystick
+from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
+from joystick_terrain import drive_from_terrain_joystick
+
 from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 from camera import Camera
@@ -184,7 +186,16 @@ if __name__ == '__main__':
                                     fl = fr = bl = br = 0
 
                                 print(f"[JOYSTICK] FL={fl}, FR={fr}, BL={bl}, BR={br}")
-                                drive_from_joystick(fl, fr, bl, br)
+                                drive_mecanum_joystick(fl, fr, bl, br)
+
+                        elif msg_type == "terrain":
+                            fl = payload.get("frontLeft", 0)
+                            fr = payload.get("frontRight", 0)
+                            bl = payload.get("backLeft", 0)
+                            br = payload.get("backRight", 0)
+
+                            print(f"[TERRAIN] FL={fl}, FR={fr}, BL={bl}, BR={br}")
+                            drive_from_terrain_joystick(fl, fr, bl, br)
 
  
                         elif msg_type == "camera-servo":

@@ -21,10 +21,9 @@ def apply_min_threshold(value, threshold=MIN_THRESHOLD):
     else:
         return min(value, -threshold)
 
-def drive_from_joystick(fl: float, fr: float, bl: float, br: float):
+def drive_from_terrain_joystick(fl: float, fr: float, bl: float, br: float):
     global last_command_time
 
-    # Round and apply dead zone
     def process(val):
         val = round(val, 2)
         if abs(val) < DEAD_ZONE:
@@ -36,12 +35,10 @@ def drive_from_joystick(fl: float, fr: float, bl: float, br: float):
     bl = process(bl)
     br = process(br)
 
-    # If all are zero, stop
     if fl == 0 and fr == 0 and bl == 0 and br == 0:
         stop()
         return
 
-    # Scale and apply threshold
     def scale(val):
         return apply_min_threshold(int(val * MAX_PWM))
 
@@ -50,7 +47,7 @@ def drive_from_joystick(fl: float, fr: float, bl: float, br: float):
     bl_pwm = scale(bl)
     br_pwm = scale(br)
 
-    print(f"[MECANUM] FL: {fl_pwm}, FR: {fr_pwm}, BL: {bl_pwm}, BR: {br_pwm}")
+    print(f"[TERRAIN] FL: {fl_pwm}, FR: {fr_pwm}, BL: {bl_pwm}, BR: {br_pwm}")
     car.set_motor_model(fl_pwm, bl_pwm, fr_pwm, br_pwm)
     last_command_time = time.time()
 
