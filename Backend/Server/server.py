@@ -169,9 +169,7 @@ if __name__ == '__main__':
                         data = json.loads(message)
                         payload = data.get("payload", {})
                         msg_type = data.get("type")
-                        if throttle > 0 and infrared.read_all_infrared() != 0:
-                            print("[INFRARED] Obstacle detected. Blocking forward movement.")
-                            throttle = 0
+                       
 
                         if msg_type == "joystick":
                                 fl = payload.get("frontLeft", 0)
