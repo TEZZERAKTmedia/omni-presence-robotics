@@ -9,6 +9,7 @@ from infrared import Infrared
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
+from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 from camera import Camera
 from camera_streamer import CameraStreamer
@@ -204,6 +205,7 @@ if __name__ == '__main__':
                 client_address, message = video_queue.get()
                 print(f"[VIDEO] {client_address}: {message}")
                 server.send_data_to_video_client(message, client_address)
+            check_idle_and_stop()
 
     except KeyboardInterrupt:
         print("[SHUTDOWN] Stopping server...")
