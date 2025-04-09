@@ -37,31 +37,30 @@ export default function JoystickController() {
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
   
-    const normX = +(clampedX / radius).toFixed(2); // Steering
-    const normY = +(clampedY / radius).toFixed(2); // Throttle
+    const normX = +(clampedX / radius).toFixed(2); // steer
+    const normY = +(clampedY / radius).toFixed(2); // throttle
   
     const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : normY;
+    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : -normY; // INVERTED Y axis (up is forward)
   
-    // Mixer
+    // Basic tank drive mixing:
     let left = throttle + steer;
     let right = throttle - steer;
   
-    // Normalize if out of bounds
-    const maxVal = Math.max(Math.abs(left), Math.abs(right));
-    if (maxVal > 1) {
-      left /= maxVal;
-      right /= maxVal;
+    // Normalize to range [-1, 1]
+    const max = Math.max(Math.abs(left), Math.abs(right));
+    if (max > 1) {
+      left /= max;
+      right /= max;
     }
-  
-    const clamp = (val) => Math.max(-1, Math.min(1, val));
   
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: clamp(-left),   // Invert if needed
-      servo1: clamp(-right)
+      servo0: left,
+      servo1: right
     });
   };
+  
   
   
 
