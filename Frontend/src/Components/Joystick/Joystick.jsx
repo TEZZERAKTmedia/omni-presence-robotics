@@ -37,26 +37,32 @@ export default function JoystickController() {
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
   
-    const normX = +(clampedX / radius).toFixed(2); // steering
-    const normY = +(clampedY / radius).toFixed(2); // throttle
+    const normX = +(clampedX / radius).toFixed(2); // Steering
+    const normY = +(clampedY / radius).toFixed(2); // Throttle
   
-    // Apply dead zone
     const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : normY; // -y to make up = forward
+    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : normY;
   
-    // ? Mixer logic: combine throttle + steering into left/right
-    const leftMotor = throttle + steer;
-    const rightMotor = throttle - steer;
+    // Mixer
+    let left = throttle + steer;
+    let right = throttle - steer;
   
-    // Clamp to -1 to 1 range
+    // Normalize if out of bounds
+    const maxVal = Math.max(Math.abs(left), Math.abs(right));
+    if (maxVal > 1) {
+      left /= maxVal;
+      right /= maxVal;
+    }
+  
     const clamp = (val) => Math.max(-1, Math.min(1, val));
   
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: clamp(leftMotor),
-      servo1: clamp(rightMotor)
+      servo0: clamp(-left),   // Invert if needed
+      servo1: clamp(-right)
     });
   };
+  
   
 
   const reset = () => {
