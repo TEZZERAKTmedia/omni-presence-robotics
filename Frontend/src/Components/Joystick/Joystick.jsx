@@ -42,7 +42,7 @@ export default function JoystickController() {
   
     // Apply dead zone
     const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : -normY; // -y to make up = forward
+    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : normY; // -y to make up = forward
   
     // ? Mixer logic: combine throttle + steering into left/right
     const leftMotor = throttle + steer;
