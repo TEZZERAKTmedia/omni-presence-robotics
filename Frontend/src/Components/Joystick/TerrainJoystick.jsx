@@ -73,7 +73,7 @@ export default function TerrainJoystickController() {
   return (
     <div
       ref={padRef}
-      className="joystick-container"
+      className="terrain-joystick-container"
       onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
       onMouseMove={(e) => dragging && updatePosition(e)}
       onMouseUp={reset}

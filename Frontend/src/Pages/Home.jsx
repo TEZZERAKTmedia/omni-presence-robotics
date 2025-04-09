@@ -6,10 +6,14 @@ import '../App.css'; // Adjust the path as necessary
 
 export default function Home() {
   return (
-    <div className="robot-ui">
-      <JoystickToggle />
+    <>
       <VideoFeed />
+    <div className="robot-ui">
+      
+      <JoystickToggle />
+      
       <CameraJoystick />
     </div>
+    </>
   );
 }
