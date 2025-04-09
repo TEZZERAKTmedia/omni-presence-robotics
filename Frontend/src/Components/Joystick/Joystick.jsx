@@ -28,7 +28,7 @@ export default function JoystickController() {
     const clampedY = distance * Math.sin(angle);
 
     const normX = +(clampedX / radius).toFixed(2); // strafe
-    const normY = +(clampedY / radius).toFixed(2); // forward/backward
+    const normY = (clampedY / radius).toFixed(2); // forward/backward
     const rotation = 0;
 
     const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
