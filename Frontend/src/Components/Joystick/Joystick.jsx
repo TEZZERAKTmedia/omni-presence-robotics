@@ -24,44 +24,45 @@ export default function JoystickController() {
   }, [dragging, servoValues]);
 
   const updatePosition = (e) => {
-    const rect = padRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-  
-    const x = e.clientX - centerX;
-    const y = e.clientY - centerY;
-    const radius = rect.width / 2;
-  
-    const distance = Math.min(Math.sqrt(x * x + y * y), radius);
-    const angle = Math.atan2(y, x);
-    const clampedX = distance * Math.cos(angle);
-    const clampedY = distance * Math.sin(angle);
-  
-    const normX = +(clampedX / radius).toFixed(2); // steer
-    const normY = +(clampedY / radius).toFixed(2); // throttle
-  
-    const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : -normY; // INVERTED Y axis (up is forward)
-  
-    // Basic tank drive mixing:
-    let left = throttle + steer;
-    let right = throttle - steer;
-  
-    // Normalize to range [-1, 1]
-    const max = Math.max(Math.abs(left), Math.abs(right));
-    if (max > 1) {
-      left /= max;
-      right /= max;
-    }
-  
-    setPosition({ x: clampedX, y: clampedY });
-    setServoValues({
-      servo0: left,
-      servo1: right
-    });
-  };
-  
-  
+  const rect = padRef.current.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  const x = e.clientX - centerX;
+  const y = e.clientY - centerY;
+  const radius = rect.width / 2;
+
+  const distance = Math.min(Math.sqrt(x * x + y * y), radius);
+  const angle = Math.atan2(y, x);
+  const clampedX = distance * Math.cos(angle);
+  const clampedY = distance * Math.sin(angle);
+
+  const normX = +(clampedX / radius).toFixed(2); // Steering
+  const normY = +(clampedY / radius).toFixed(2); // Throttle
+
+  const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
+  const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : normY;
+
+  // Mixer
+  let left = throttle + steer;
+  let right = throttle - steer;
+
+  // Normalize if out of bounds
+  const maxVal = Math.max(Math.abs(left), Math.abs(right));
+  if (maxVal > 1) {
+    left /= maxVal;
+    right /= maxVal;
+  }
+
+  const clamp = (val) => Math.max(-1, Math.min(1, val));
+
+  setPosition({ x: clampedX, y: clampedY });
+  setServoValues({
+    servo0: clamp(-left),   // Invert if needed
+    servo1: clamp(-right)
+  });
+};
+
   
 
   const reset = () => {
