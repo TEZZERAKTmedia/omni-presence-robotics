@@ -4,24 +4,25 @@ import struct
 import asyncio
 import threading
 import json
-import base64
 import websockets
 
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick
 from camera_servo_controller import control_camera_servo
-from camera import Camera  # Uses capture_frame()
+from camera import Camera
+from camera_streamer import CameraStreamer
 
-# Global camera instance – if you prefer to share it; 
-# however, if that causes issues with concurrent access, you might create a new one per connection.
+# Initialize camera and start persistent frame capture
 global_camera = Camera()
+streamer = CameraStreamer(global_camera)
+streamer.start()
 
 # ----------------------------
 # Robust WebSocket stream handler
 # ----------------------------
 async def stream_handler(*args, **kwargs):
-    # Try to unpack the correct two arguments (websocket, path)
+    # Handle argument unpacking from websockets.serve
     if len(args) >= 2:
         websocket, path = args[0], args[1]
     elif len(args) == 1:
@@ -30,29 +31,19 @@ async def stream_handler(*args, **kwargs):
         print("⚠️ Warning: No path provided in handler arguments")
     else:
         raise TypeError("stream_handler() requires at least 1 argument")
-    
+
     print("📡 Video client connected; path:", path)
-    # (Optional) If you want a fresh camera for each connection, use:
-    # camera = Camera()
-    # Otherwise, use the global_camera.
-    camera = global_camera
-    
+
     try:
         while True:
-            frame = camera.capture_frame()
-            # If frame is empty, skip sending
-            if not frame:
-                await asyncio.sleep(0.05)
-                continue
-            encoded = base64.b64encode(frame).decode("utf-8")
-            await websocket.send(encoded)
-            await asyncio.sleep(0.05)
+            frame = streamer.get_frame()
+            if frame:
+                await websocket.send(frame)
+            await asyncio.sleep(0.05)  # Stream ~20 FPS
     except websockets.exceptions.ConnectionClosed:
         print("❌ Video client disconnected")
     except Exception as e:
-        print("🚨 Video stream error:", e)
-    finally:
-        camera.close()
+        print(f"🚨 Video stream error: {e}")
 
 
 # ----------------------------
