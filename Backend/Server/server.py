@@ -216,7 +216,7 @@ if __name__ == '__main__':
                 client_address, message = video_queue.get()
                 print(f"[VIDEO] {client_address}: {message}")
                 server.send_data_to_video_client(message, client_address)
-            check_idle_and_stop()
+           
 
     except KeyboardInterrupt:
         print("[SHUTDOWN] Stopping server...")
