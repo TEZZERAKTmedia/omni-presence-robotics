@@ -27,25 +27,37 @@ export default function JoystickController() {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-
+  
     const x = e.clientX - centerX;
     const y = e.clientY - centerY;
     const radius = rect.width / 2;
-
+  
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
     const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
-
-    const normX = +(clampedX / radius).toFixed(2);
-    const normY = +(clampedY / radius).toFixed(2);
-
+  
+    const normX = +(clampedX / radius).toFixed(2); // steering
+    const normY = +(clampedY / radius).toFixed(2); // throttle
+  
+    // Apply dead zone
+    const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
+    const throttle = Math.abs(normY) < DEAD_ZONE ? 0 : -normY; // -y to make up = forward
+  
+    // ? Mixer logic: combine throttle + steering into left/right
+    const leftMotor = throttle + steer;
+    const rightMotor = throttle - steer;
+  
+    // Clamp to -1 to 1 range
+    const clamp = (val) => Math.max(-1, Math.min(1, val));
+  
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
-      servo1: Math.abs(normY) < DEAD_ZONE ? 0 : normY
+      servo0: clamp(leftMotor),
+      servo1: clamp(rightMotor)
     });
   };
+  
 
   const reset = () => {
     setDragging(false);
