@@ -37,28 +37,37 @@ export default function JoystickController() {
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
   
-    const normX = +(clampedX / radius).toFixed(2); // steering
-    const normY = +(clampedY / radius).toFixed(2); // throttle
+    const normX = +(clampedX / radius).toFixed(2); // strafe
+    const normY = +(clampedY / radius).toFixed(2); // forward/backward
+    const r = 0; // future: rotation control
   
-    const throttle = -(Math.abs(normY) < DEAD_ZONE ? 0 : normY); // invert Y to make up = forward
-    const steer = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
+    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
+    const yInput = -(Math.abs(normY) < DEAD_ZONE ? 0 : normY); // Y inverted
+    const rotation = r;
   
-    // AWD-style differential mixing
-    let leftMotor = throttle + steer;
-    let rightMotor = throttle - steer;
+    // Mecanum drive equations
+    let fl = yInput + xInput + rotation;
+    let fr = yInput - xInput - rotation;
+    let bl = yInput - xInput + rotation;
+    let br = yInput + xInput - rotation;
   
-    // Normalize so neither exceeds ±1
-    const max = Math.max(1, Math.abs(leftMotor), Math.abs(rightMotor));
-    leftMotor /= max;
-    rightMotor /= max;
+    // Normalize to max magnitude of 1
+    const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
+    fl /= max;
+    fr /= max;
+    bl /= max;
+    br /= max;
   
     setPosition({ x: clampedX, y: clampedY });
     setServoValues({
-      servo0: leftMotor,
-      servo1: rightMotor
+      frontLeft: fl,
+      frontRight: fr,
+      backLeft: bl, 
+      backRight: br
     });
   };
   
+
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
