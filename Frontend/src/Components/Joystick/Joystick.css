@@ -10,8 +10,23 @@
     user-select: none;
     touch-action: none;
 
-    background: radial-gradient(circle at center, #f0f0f0, #dcdcdc);
+    background: radial-gradient(circle at center, #00ffe0, #00c0ff);
   }
+  .terrain-joystick-container {
+    position: relative;
+    width: 10rem;
+    height: 10rem;
+    border: 4px solid #ccc;
+    border-radius: 50%;
+    margin-inline: 1rem;
+    margin-block: 2rem;
+    margin-top: 0%;
+    user-select: none;
+    touch-action: none;
+
+    background: radial-gradient(circle at center,  #b0ff6f 20%, #355c1c 80%);
+  }
+  
   
   .joystick-knob {
     width: 80px;

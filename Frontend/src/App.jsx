@@ -2,15 +2,15 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './Pages/Home';
 import Editor from './Pages/FloorMapping';
+import Navbar from './Components/Navbar/Navbar'
+
 
 export default function App() {
   return (
     <Router>
-      <nav className="p-4 flex gap-4 bg-gray-200">
-        <Link to="/">Home</Link>
-        <Link to="/editor">Editor</Link>
-      </nav>
-
+      
+      
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/editor" element={<Editor />} />

@@ -73,13 +73,15 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
+  gap: 20rem;
   
   flex-wrap: wrap; /* Optional: wraps on smaller screens */
 }
 
 .robot-ui > * {
   flex: none;
+  z-index: 10;
+  position: relative;
 }
 
 /* Joystick Styles (optional if needed) */
@@ -88,26 +90,3 @@ body {
   height: 200px;
 }
 
-/* Video Feed Box */
-.video-feed {
-  width: 200px; /* 👈 Set your desired width */
-  max-width: 90vw;
-  height: 200px;
-  border: 4px solid #4caf50;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  margin-top: -20vh;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease;
-}
-
-.video-feed:hover {
-  transform: scale(1.02);
-}
-
-.video-feed img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
