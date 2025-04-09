@@ -1,19 +1,21 @@
+/* VideoFeed.css */
 .video-feed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1;
-  overflow: hidden;
-  pointer-events: none;
-  background: #000;
-}
-
-.video-feed img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  filter: brightness(0.8) contrast(1.1);
-}
+    position: relative;
+    border: 4px solid #4caf50; /* green border */
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .video-feed:hover {
+    transform: scale(1.02);
+  }
+  
+  .video-feed img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
