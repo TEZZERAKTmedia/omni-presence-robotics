@@ -17,62 +17,61 @@ export default function JoystickController() {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-
+  
     const x = e.clientX - centerX;
     const y = e.clientY - centerY;
     const radius = rect.width / 2;
-
+  
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
     const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
-
-    const normX = +(clampedX / radius).toFixed(2); // strafe
-    const normY = -(clampedY / radius).toFixed(2); // forward/backward
-    const rotation = 0;
-
-    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : normX;
-    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : normY;
-
+  
+    const normX = clampedX / radius;
+    const normY = clampedY / radius;
+  
+    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
+    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
+  
     // Mecanum drive equations
-    let fl = yInput + xInput + rotation;
-    let fr = yInput - xInput - rotation;
-    let bl = yInput - xInput + rotation;
-    let br = yInput + xInput - rotation;
-
-    // Normalize to max magnitude of 1
+    let fl = yInput + xInput;
+    let fr = yInput - xInput;
+    let bl = yInput - xInput;
+    let br = yInput + xInput;
+  
     const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
     fl /= max;
     fr /= max;
     bl /= max;
     br /= max;
-
+  
     setPosition({ x: clampedX, y: clampedY });
-
-    const payload = {
-      frontLeft: fl,
-      frontRight: fr,
-      backLeft: bl,
-      backRight: br
-    };
-
-    sendCommand({ type: 'joystick', payload });
+  
+    sendCommand({
+      type: 'joystick',
+      payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
+    });
   };
+  
 
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
-
-    sendCommand({
-      type: 'joystick',
-      payload: {
-        frontLeft: 0,
-        frontRight: 0,
-        backLeft: 0,
-        backRight: 0
-      }
-    });
+  
+    // Add small timeout to allow current direction to finish
+    setTimeout(() => {
+      sendCommand({
+        type: 'joystick',
+        payload: {
+          frontLeft: 0,
+          frontRight: 0,
+          backLeft: 0,
+          backRight: 0
+        }
+      });
+    }, 100); // 100ms buffer
   };
+  
 
   const sendDpadCommand = (fl, fr, bl, br) => {
     sendCommand({
