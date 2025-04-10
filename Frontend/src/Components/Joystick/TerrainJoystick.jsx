@@ -74,31 +74,32 @@ export default function TerrainJoystickController() {
   };
 
   useEffect(() => {
-    if (!dragging) return;
-
     const handleMove = (e) => {
-      if (e.touches) {
-        updatePosition(e.touches[0]);
-      } else {
-        updatePosition(e);
-      }
+      if (!padRef.current || !dragging) return;
+  
+      const event = e.touches ? e.touches[0] : e;
+      updatePosition(event); // 👈 update relative to joystick center
     };
-
+  
     const handleUp = () => reset();
-
-    // ✅ Attach global event listeners
+  
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('touchend', handleUp);
-
+    window.addEventListener('mouseleave', handleUp); // Optional
+  
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleUp);
+      window.removeEventListener('mouseleave', handleUp);
     };
   }, [dragging]);
+  
+  
+  
 
   return (
     <div className='outer-terrain-joystick-container'>
@@ -106,9 +107,7 @@ export default function TerrainJoystickController() {
         ref={padRef}
         className="terrain-joystick-container"
         onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-        onMouseMove={(e) => dragging && updatePosition(e)}
-        onMouseUp={reset}
-        onMouseLeave={reset}
+        
         onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
         onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
         onTouchEnd={reset}
