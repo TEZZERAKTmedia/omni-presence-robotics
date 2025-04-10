@@ -51,33 +51,41 @@ export default function JoystickController() {
     const radius = rect.width / 2;
   
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
+    if (distance / radius < DEAD_ZONE) {
+      reset();
+      return;
+    }
+  
     const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
-  
-    const normX = clampedX / radius;
-    const normY = clampedY / radius;
-  
-    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
-    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
-  
-    // Mecanum drive equations
-    let fl = yInput + xInput;
-    let fr = yInput - xInput;
-    let bl = yInput - xInput;
-    let br = yInput + xInput;
-  
-    const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
-    fl /= max;
-    fr /= max;
-    bl /= max;
-    br /= max;
-  
     setPosition({ x: clampedX, y: clampedY });
+  
+    // Determine direction: round angle to nearest 45 degrees (8 sectors)
+    const direction = Math.round((angle * 180 / Math.PI + 360 + 22.5) % 360 / 45);
+  
+    // Predefined mecanum motor sets for each direction
+    const mecanumMap = {
+      0:  { fl: 1, fr: -1, bl: -1, br: 1 },   // Right strafe
+      1:  { fl: 1, fr: 0, bl: 0, br: 1 },     // Forward-right
+      2:  { fl: 1, fr: 1, bl: 1, br: 1 },     // Forward
+      3:  { fl: 0, fr: 1, bl: 1, br: 0 },     // Forward-left
+      4:  { fl: -1, fr: 1, bl: 1, br: -1 },   // Left strafe
+      5:  { fl: -1, fr: 0, bl: 0, br: -1 },   // Backward-left
+      6:  { fl: -1, fr: -1, bl: -1, br: -1 }, // Backward
+      7:  { fl: 0, fr: -1, bl: -1, br: 0 },   // Backward-right
+    };
+  
+    const { fl, fr, bl, br } = mecanumMap[direction];
   
     sendCommand({
       type: 'joystick',
-      payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
+      payload: {
+        frontLeft: fl,
+        frontRight: fr,
+        backLeft: bl,
+        backRight: br
+      }
     });
   };
   
