@@ -55,6 +55,7 @@ export default function CameraJoystick() {
   };
 
   return (
+    
     <div
       ref={padRef}
       className="joystick-container"
@@ -72,5 +73,6 @@ export default function CameraJoystick() {
       <button onClick={() => setPanTilt({ pan: 0, tilt: 1 })} className="joystick-arrow up">⬆️</button>
       <button onClick={() => setPanTilt({ pan: 0, tilt: -1 })} className="joystick-arrow down">⬇️</button>
     </div>
+    
   );
 }

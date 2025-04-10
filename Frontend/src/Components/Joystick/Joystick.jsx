@@ -13,6 +13,33 @@ export default function JoystickController() {
     connectWebSocket('ws://localhost:8001');
   }, []);
 
+  useEffect(() => {
+    if (dragging) {
+      const handleMove = (e) => {
+        if (e.touches) {
+          updatePosition(e.touches[0]);
+        } else {
+          updatePosition(e);
+        }
+      };
+  
+      const handleUp = () => reset();
+  
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+      window.addEventListener('touchmove', handleMove);
+      window.addEventListener('touchend', handleUp);
+  
+      return () => {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleUp);
+      };
+    }
+  }, [dragging]);
+  
+
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -81,24 +108,31 @@ export default function JoystickController() {
   };
 
   return (
-    <div
-      ref={padRef}
-      className="joystick-container"
-      onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-      onMouseMove={(e) => dragging && updatePosition(e)}
-      onMouseUp={reset}
-      onMouseLeave={reset}
-      onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
-      onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
-      onTouchEnd={reset}
-    >
-      <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
+  
+      <div
+        ref={padRef}
+        className="joystick-container"
+        onMouseDown={(e) => {
+          setDragging(true);
+          updatePosition(e);
+        }}
+        onTouchStart={(e) => {
+          setDragging(true);
+          updatePosition(e.touches[0]);
+        }}
+      >
+        <div
+          className="joystick-knob"
+          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        />
 
-      {/* D-Pad Buttons */}
-      <button onClick={() => sendDpadCommand(-1, 1, -1, 1)} className="joystick-arrow left">⬅️</button>
-      <button onClick={() => sendDpadCommand(1, -1, 1, -1)} className="joystick-arrow right">➡️</button>
-      <button onClick={() => sendDpadCommand(1, 1, 1, 1)} className="joystick-arrow up">⬆️</button>
-      <button onClick={() => sendDpadCommand(-1, -1, -1, -1)} className="joystick-arrow down">⬇️</button>
-    </div>
+        {/* D-Pad Buttons */}
+        <button onClick={() => sendDpadCommand(-1, 1, -1, 1)} className="joystick-arrow left">⬅️</button>
+        <button onClick={() => sendDpadCommand(1, -1, 1, -1)} className="joystick-arrow right">➡️</button>
+        <button onClick={() => sendDpadCommand(1, 1, 1, 1)} className="joystick-arrow up">⬆️</button>
+        <button onClick={() => sendDpadCommand(-1, -1, -1, -1)} className="joystick-arrow down">⬇️</button>
+      </div>
+
+
   );
 }

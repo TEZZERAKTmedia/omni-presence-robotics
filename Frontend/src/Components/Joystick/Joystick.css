@@ -12,6 +12,7 @@
 
     background: radial-gradient(circle at center, #00ffe0, #00c0ff);
   }
+  
   .terrain-joystick-container {
     position: relative;
     width: 10rem;
