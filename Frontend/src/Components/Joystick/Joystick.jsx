@@ -56,13 +56,13 @@ export default function JoystickController() {
       return;
     }
   
-    const angle = Math.atan2(y, x);
+    const angle = Math.atan2(-y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
     setPosition({ x: clampedX, y: clampedY });
   
     // Determine direction: round angle to nearest 45 degrees (8 sectors)
-    const direction = Math.round((angle * 180 / Math.PI + 360 + 22.5) % 360 / 45);
+    const direction = Math.round((angle * 180 / Math.PI + 360  - 22.5) % 360 / 45);
   
     // Predefined mecanum motor sets for each direction
     const mecanumMap = {

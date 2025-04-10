@@ -28,13 +28,13 @@ export default function TerrainJoystickController() {
       return;
     }
   
-    const angle = Math.atan2(y, x);
+    const angle = Math.atan2(-y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
     setPosition({ x: clampedX, y: clampedY });
   
     // Convert angle to one of 8 sectors (45° increments)
-    const direction = Math.round((angle * 180 / Math.PI + 360 + 22.5) % 360 / 45);
+    const direction = Math.round((angle * 180 / Math.PI + 360 - 22.5) % 360 / 45);
   
     // Predefined motor values for each direction
     const motorMap = {
