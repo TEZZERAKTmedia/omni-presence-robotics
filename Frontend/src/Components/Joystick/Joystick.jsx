@@ -12,34 +12,6 @@ export default function JoystickController() {
   useEffect(() => {
     connectWebSocket('ws://localhost:8001');
   }, []);
-  useEffect(() => {
-    if (!dragging) return;
-  
-    const handleMove = (e) => {
-      if (e.touches) {
-        updatePosition(e.touches[0]);
-      } else {
-        updatePosition(e);
-      }
-    };
-  
-    const handleUp = () => reset();
-  
-    // Global listeners so dragging works outside joystick
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-    window.addEventListener('touchmove', handleMove, { passive: false });
-    window.addEventListener('touchend', handleUp);
-  
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleUp);
-    };
-  }, [dragging]);
-  
-  
 
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
@@ -61,17 +33,11 @@ export default function JoystickController() {
     const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
   
-    const isMoving = Math.abs(yInput) > DEAD_ZONE;
-  
-    // 🧠 Dynamic switch between strafe and rotate when idle
-    const forward = yInput;
-    const strafe = isMoving ? xInput : 0;
-    const rotate = isMoving ? 0 : xInput;
-  
-    let fl = forward + strafe + rotate;
-    let fr = forward - strafe - rotate;
-    let bl = forward - strafe + rotate;
-    let br = forward + strafe - rotate;
+    // Mecanum drive equations
+    let fl = yInput + xInput;
+    let fr = yInput - xInput;
+    let bl = yInput - xInput;
+    let br = yInput + xInput;
   
     const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
     fl /= max;
@@ -87,26 +53,21 @@ export default function JoystickController() {
     });
   };
   
-  
 
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
-  
-    // Add small timeout to allow current direction to finish
-    setTimeout(() => {
-      sendCommand({
-        type: 'joystick',
-        payload: {
-          frontLeft: 0,
-          frontRight: 0,
-          backLeft: 0,
-          backRight: 0
-        }
-      });
-    }, 100); // 100ms buffer
+
+    sendCommand({
+      type: 'joystick',
+      payload: {
+        frontLeft: 0,
+        frontRight: 0,
+        backLeft: 0,
+        backRight: 0
+      }
+    });
   };
-  
 
   const sendDpadCommand = (fl, fr, bl, br) => {
     sendCommand({
@@ -116,12 +77,13 @@ export default function JoystickController() {
   };
 
   return (
-    <div className='outer-joystick-container'>
     <div
       ref={padRef}
       className="joystick-container"
       onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-      
+      onMouseMove={(e) => dragging && updatePosition(e)}
+      onMouseUp={reset}
+      onMouseLeave={reset}
       onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
       onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
       onTouchEnd={reset}
@@ -133,7 +95,6 @@ export default function JoystickController() {
       <button onClick={() => sendDpadCommand(1, -1, 1, -1)} className="joystick-arrow right">➡️</button>
       <button onClick={() => sendDpadCommand(1, 1, 1, 1)} className="joystick-arrow up">⬆️</button>
       <button onClick={() => sendDpadCommand(-1, -1, -1, -1)} className="joystick-arrow down">⬇️</button>
-    </div>
     </div>
   );
 }
