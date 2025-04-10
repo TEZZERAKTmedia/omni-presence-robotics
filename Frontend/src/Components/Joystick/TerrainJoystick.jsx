@@ -70,57 +70,50 @@ export default function TerrainJoystickController() {
     });
   };
   useEffect(() => {
-    if (dragging) {
-      const handleMove = (e) => {
-        if (e.touches) {
-          updatePosition(e.touches[0]);
-        } else {
-          updatePosition(e);
-        }
-      };
+    if (!dragging) return;
   
-      const handleUp = () => reset();
+    const handleMove = (e) => {
+      if (e.touches) {
+        updatePosition(e.touches[0]);
+      } else {
+        updatePosition(e);
+      }
+    };
   
-      window.addEventListener('mousemove', handleMove);
-      window.addEventListener('mouseup', handleUp);
-      window.addEventListener('touchmove', handleMove);
-      window.addEventListener('touchend', handleUp);
+    const handleUp = () => reset();
   
-      return () => {
-        window.removeEventListener('mousemove', handleMove);
-        window.removeEventListener('mouseup', handleUp);
-        window.removeEventListener('touchmove', handleMove);
-        window.removeEventListener('touchend', handleUp);
-      };
-    }
+    // ✅ Attach global event listeners
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleUp);
+  
+    return () => {
+      // ✅ Clean up
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
   }, [dragging]);
+  
   
 
   return (
-    
-      <div
-        ref={padRef}
-        className="terrain-joystick-container"
-        onMouseDown={(e) => {
-          setDragging(true);
-          updatePosition(e);
-        }}
-        onTouchStart={(e) => {
-          setDragging(true);
-          updatePosition(e.touches[0]);
-        }}
-      >
-        <div
-          className="joystick-knob"
-          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-        />
-
-        {/* D-Pad Buttons */}
-        <button onClick={() => sendDpadCommand(-1, 1, -1, 1)} className="joystick-arrow left">⬅️</button>
-        <button onClick={() => sendDpadCommand(1, -1, 1, -1)} className="joystick-arrow right">➡️</button>
-        <button onClick={() => sendDpadCommand(1, 1, 1, 1)} className="joystick-arrow up">⬆️</button>
-        <button onClick={() => sendDpadCommand(-1, -1, -1, -1)} className="joystick-arrow down">⬇️</button>
-      </div>
-    
+    <div className='outer-terrain-joystick-container'>
+    <div
+      ref={padRef}
+      className="terrain-joystick-container"
+      onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
+      onMouseMove={(e) => dragging && updatePosition(e)}
+      onMouseUp={reset}
+      onMouseLeave={reset}
+      onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
+      onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
+      onTouchEnd={reset}
+    >
+      <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
+    </div>
+    </div>
   );
 }

@@ -22,6 +22,32 @@ export default function CameraJoystick() {
     }, UPDATE_INTERVAL);
     return () => clearInterval(interval);
   }, [dragging, panTilt]);
+  useEffect(() => {
+    if (!dragging) return;
+  
+    const handleMove = (e) => {
+      if (e.touches) {
+        updatePosition(e.touches[0]);
+      } else {
+        updatePosition(e);
+      }
+    };
+  
+    const handleUp = () => reset();
+  
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleUp);
+  
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, [dragging]);
+  
 
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
