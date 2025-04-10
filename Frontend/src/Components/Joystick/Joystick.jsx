@@ -62,16 +62,22 @@ export default function JoystickController() {
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
   
     // Mecanum drive equations
-    let fl = yInput + xInput;
-    let fr = yInput - xInput;
-    let bl = yInput - xInput;
-    let br = yInput + xInput;
+    let forward = yInput;
+    let strafe = xInput;
+    let rotate = 0;
+
+    let fl = forward + strafe + rotate;
+    let fr = forward - strafe - rotate;
+    let bl = forward - strafe + rotate;
+    let br = forward + strafe - rotate;
+
   
     const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
-    fl /= max;
-    fr /= max;
-    bl /= max;
-    br /= max;
+      fl /= max;
+      fr /= max;
+      bl /= max;
+      br /= max;
+
   
     setPosition({ x: clampedX, y: clampedY });
   
