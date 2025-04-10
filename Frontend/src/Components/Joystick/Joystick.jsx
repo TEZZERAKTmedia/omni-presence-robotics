@@ -61,23 +61,23 @@ export default function JoystickController() {
     const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
   
-    // Mecanum drive equations
-    let forward = yInput;
-    let strafe = xInput;
-    let rotate = 0;
-
+    const isMoving = Math.abs(yInput) > DEAD_ZONE;
+  
+    // 🧠 Dynamic switch between strafe and rotate when idle
+    const forward = yInput;
+    const strafe = isMoving ? xInput : 0;
+    const rotate = isMoving ? 0 : xInput;
+  
     let fl = forward + strafe + rotate;
     let fr = forward - strafe - rotate;
     let bl = forward - strafe + rotate;
     let br = forward + strafe - rotate;
-
   
     const max = Math.max(1, Math.abs(fl), Math.abs(fr), Math.abs(bl), Math.abs(br));
-      fl /= max;
-      fr /= max;
-      bl /= max;
-      br /= max;
-
+    fl /= max;
+    fr /= max;
+    bl /= max;
+    br /= max;
   
     setPosition({ x: clampedX, y: clampedY });
   
@@ -86,6 +86,7 @@ export default function JoystickController() {
       payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
     });
   };
+  
   
 
   const reset = () => {
@@ -120,9 +121,7 @@ export default function JoystickController() {
       ref={padRef}
       className="joystick-container"
       onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-      onMouseMove={(e) => dragging && updatePosition(e)}
-      onMouseUp={reset}
-      onMouseLeave={reset}
+      
       onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
       onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
       onTouchEnd={reset}
