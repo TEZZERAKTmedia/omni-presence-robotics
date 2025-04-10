@@ -86,9 +86,7 @@ export default function CameraJoystick() {
       ref={padRef}
       className="joystick-container"
       onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-      onMouseMove={(e) => dragging && updatePosition(e)}
-      onMouseUp={reset}
-      onMouseLeave={reset}
+      
       onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
       onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
       onTouchEnd={reset}
