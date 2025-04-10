@@ -17,39 +17,33 @@ export default function TerrainJoystickController() {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-  
+
     const x = e.clientX - centerX;
     const y = e.clientY - centerY;
     const radius = rect.width / 2;
-  
+
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
-    if (distance / radius < DEAD_ZONE) {
-      reset();
-      return;
-    }
-  
-    const angle = Math.atan2(-y, x);
+    const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
+
+    const normX = clampedX / radius;
+    const normY = clampedY / radius;
+
+    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2); // turn
+    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2); // forward/backward
+
+    // Terrain-style tank drive logic
+    let left = yInput - xInput;
+    let right = yInput + xInput;
+
+    // Clamp to range [-1, 1]
+    const max = Math.max(1, Math.abs(left), Math.abs(right));
+    left /= max;
+    right /= max;
+
     setPosition({ x: clampedX, y: clampedY });
-  
-    // Convert angle to one of 8 sectors (45° increments)
-    const direction = Math.round((angle * 180 / Math.PI + 360 - 22.5) % 360 / 45);
-  
-    // Predefined motor values for each direction
-    const motorMap = {
-      0:  { left: 1, right: 1 },    // Right
-      1:  { left: 1, right: 0.5 },  // Forward-right
-      2:  { left: 1, right: -1 },   // Forward
-      3:  { left: 0.5, right: -1 }, // Forward-left
-      4:  { left: -1, right: -1 },  // Left
-      5:  { left: -1, right: -0.5 },// Backward-left
-      6:  { left: -1, right: 1 },   // Backward
-      7:  { left: -0.5, right: 1 }, // Backward-right
-    };
-  
-    const { left, right } = motorMap[direction];
-  
+
     sendCommand({
       type: 'terrain',
       payload: {
@@ -60,7 +54,6 @@ export default function TerrainJoystickController() {
       }
     });
   };
-  
 
   const reset = () => {
     setDragging(false);
