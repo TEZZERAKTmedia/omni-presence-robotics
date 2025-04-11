@@ -11,12 +11,12 @@ class CatToyController:
         self.running = False
         self.thread = None
 
-        # Define pulse widths for each speed multiplier
+        # Clear speed-to-pulse map (relative incremental steps)
         self.speed_pulse_map = {
-            1: 300,  # Original difference
-            2: 600,  # 2x
-            4: 900,  # 4x
-            8: 1200  # 8x (near servo max limits)
+            1: 200,   # ±200 from 1500 (1300–1700)
+            2: 400,   # ±400 from 1500 (1100–1900)
+            4: 700,   # ±700 from 1500 (800–2200)
+            8: 1000   # ±1000 from 1500 (500–2500)
         }
 
     def _run_servo(self, pulse_width):
@@ -38,10 +38,12 @@ class CatToyController:
             self.running = False
             self.thread.join()
 
+        delta = self.speed_pulse_map.get(speed, 200)
+
         if direction == 'left':
-            pulse = 1500 - self.speed_pulse_map.get(speed, 300)
+            pulse = 1500 - delta
         elif direction == 'right':
-            pulse = 1500 + self.speed_pulse_map.get(speed, 300)
+            pulse = 1500 + delta
         else:
             pulse = 0
             self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse)
