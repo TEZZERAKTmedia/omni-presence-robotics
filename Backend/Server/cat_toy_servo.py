@@ -15,7 +15,7 @@ class CatToyController:
         print(f"[CAT TOY] Sending pulse width: {pulse_width}")
         while self.running:
             self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse_width)
-            time.sleep(0.05)  # continuously send pulses every 50 ms
+            time.sleep(0.05)  # continuous pulses every 50 ms
 
         # Set pulse to 0 to stop completely
         print("[CAT TOY] Servo stopped, setting pulse to 0")
@@ -23,7 +23,7 @@ class CatToyController:
 
     def set_direction(self, direction):
         if direction == self.current_direction:
-            return  # no change
+            return  # no change needed
 
         self.current_direction = direction
 
@@ -32,9 +32,9 @@ class CatToyController:
             self.thread.join()
 
         if direction == 'left':
-            pulse = 1200
+            pulse = 900  # Faster left (2x speed)
         elif direction == 'right':
-            pulse = 1800
+            pulse = 2100  # Faster right (2x speed)
         else:
             pulse = 0
             self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse)
@@ -47,9 +47,8 @@ class CatToyController:
     def stop(self):
         self.set_direction('stop')
 
-# Create singleton instance
+# Singleton instance
 cat_toy_controller = CatToyController(channel='2')
 
-# The exact function you need to import
 def control_cat_toy(direction: str):
     cat_toy_controller.set_direction(direction)
