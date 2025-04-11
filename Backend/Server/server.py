@@ -205,8 +205,10 @@ if __name__ == '__main__':
                             control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
                         elif msg_type == "cat-toy":
                             direction = payload.get('direction', 'stop')
-                            print(f"[CAT TOY] Direction: {direction}")
-                            control_cat_toy(direction)
+                            speed = payload.get('speed', 1)
+                            print(f"[CAT TOY] Direction: {direction}, Speed: {speed}")
+                            control_cat_toy(direction, speed)
+
 
                         else:
                             print(f"[WARN] Unhandled message type: {msg_type}")
