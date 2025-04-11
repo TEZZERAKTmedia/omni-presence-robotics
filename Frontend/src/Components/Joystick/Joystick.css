@@ -62,5 +62,55 @@
     font-size: 0.8rem;
     text-align: center;
     color: #333;
+
   }
+  .servo-toy-controller {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin-top: -1rem;
+    margin-bottom: 1.5rem;
+    padding: 12px 24px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+    box-shadow: 0 4px 12px rgba(0, 255, 200, 0.15), inset 0 0 5px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 255, 200, 0.2);
+  }
+  
+  /* Triangle Button Base */
+  .triangle-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 0;
+    height: 0;
+    position: relative;
+    filter: drop-shadow(0 0 6px rgba(0, 255, 224, 0.5));
+    transition: transform 0.2s ease;
+  }
+  
+  .triangle-button:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Left Triangle */
+  .triangle-button.left {
+    border-top: 25px solid transparent;
+    border-bottom: 25px solid transparent;
+    border-right: 35px solid #00ffe0;
+  }
+  
+  /* Right Triangle */
+  .triangle-button.right {
+    border-top: 25px solid transparent;
+    border-bottom: 25px solid transparent;
+    border-left: 35px solid #00ffe0;
+  }
+  
+  
+  
   

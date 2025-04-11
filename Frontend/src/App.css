@@ -111,3 +111,12 @@ body {
   height: auto;
   display: block;
 }
+
+
+.center-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem; /* Optional: spacing between toggle and video */
+  gap: 1rem; /* Space between video and cat toy buttons */
+}
