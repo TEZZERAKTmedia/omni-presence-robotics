@@ -4,22 +4,34 @@ import './Joystick.css';
 
 export default function ServoToyController() {
   const [activeDirection, setActiveDirection] = useState('stop');
+  const [speed, setSpeed] = useState(1);
 
-  const sendDirection = (direction) => {
+  const speeds = [1, 2, 4, 8];
+
+  const sendDirection = (direction, speedMultiplier) => {
     sendCommand({
       type: 'cat-toy',
       payload: {
-        direction: direction
+        direction: direction,
+        speed: speedMultiplier
       }
     });
     setActiveDirection(direction);
   };
 
-  const handleMouseDown = (direction) => () => sendDirection(direction);
-  const handleMouseUp = () => sendDirection('stop');
+  const handleMouseDown = (direction) => () => sendDirection(direction, speed);
+  const handleMouseUp = () => sendDirection('stop', speed);
 
   return (
     <div className="servo-toy-controller">
+      <div className="speed-selector">
+        <label>Speed:</label>
+        <select value={speed} onChange={(e) => setSpeed(parseInt(e.target.value, 10))}>
+          {speeds.map((s) => (
+            <option key={s} value={s}>{s}x</option>
+          ))}
+        </select>
+      </div>
       <div className="triangle-wrapper">
         <button
           className={`triangle-button left ${activeDirection === 'left' ? 'active' : ''}`}

@@ -11,19 +11,26 @@ class CatToyController:
         self.running = False
         self.thread = None
 
+        # Define pulse widths for each speed multiplier
+        self.speed_pulse_map = {
+            1: 300,  # Original difference
+            2: 600,  # 2x
+            4: 900,  # 4x
+            8: 1200  # 8x (near servo max limits)
+        }
+
     def _run_servo(self, pulse_width):
         print(f"[CAT TOY] Sending pulse width: {pulse_width}")
         while self.running:
             self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse_width)
-            time.sleep(0.05)  # continuous pulses every 50 ms
+            time.sleep(0.05)
 
-        # Set pulse to 0 to stop completely
-        print("[CAT TOY] Servo stopped, setting pulse to 0")
+        print("[CAT TOY] Servo stopped, pulse=0")
         self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, 0)
 
-    def set_direction(self, direction):
-        if direction == self.current_direction:
-            return  # no change needed
+    def set_direction(self, direction, speed=1):
+        if direction == self.current_direction and self.running:
+            return
 
         self.current_direction = direction
 
@@ -32,9 +39,9 @@ class CatToyController:
             self.thread.join()
 
         if direction == 'left':
-            pulse = 900  # Faster left (2x speed)
+            pulse = 1500 - self.speed_pulse_map.get(speed, 300)
         elif direction == 'right':
-            pulse = 2100  # Faster right (2x speed)
+            pulse = 1500 + self.speed_pulse_map.get(speed, 300)
         else:
             pulse = 0
             self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse)
@@ -47,8 +54,7 @@ class CatToyController:
     def stop(self):
         self.set_direction('stop')
 
-# Singleton instance
 cat_toy_controller = CatToyController(channel='2')
 
-def control_cat_toy(direction: str):
-    cat_toy_controller.set_direction(direction)
+def control_cat_toy(direction: str, speed: int = 1):
+    cat_toy_controller.set_direction(direction, speed)
