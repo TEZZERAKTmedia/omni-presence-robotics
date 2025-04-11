@@ -47,18 +47,24 @@ export default function JoystickController() {
   
     setPosition({ x: clampedX, y: clampedY });
   
+    // Send drive joystick payload
     sendCommand({
       type: 'joystick',
       payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
     });
+
+    // Additionally, send a camera command (simulate D-pad up: pan = 0, tilt = 1)
+    sendCommand({
+      type: 'camera-servo',
+      payload: { pan: 0, tilt: 1 }
+    });
   };
-  
 
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
   
-    // Add small timeout to allow current direction to finish
+    // Buffer before final zeroing
     setTimeout(() => {
       sendCommand({
         type: 'joystick',
@@ -69,9 +75,8 @@ export default function JoystickController() {
           backRight: 0
         }
       });
-    }, 100); // 100ms buffer
+    }, 100);
   };
-  
 
   const sendDpadCommand = (fl, fr, bl, br) => {
     sendCommand({
@@ -79,6 +84,30 @@ export default function JoystickController() {
       payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
     });
   };
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!padRef.current || !dragging) return;
+      const event = e.touches ? e.touches[0] : e;
+      updatePosition(event);
+    };
+
+    const handleUp = () => reset();
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleUp);
+    window.addEventListener('mouseleave', handleUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+      window.removeEventListener('mouseleave', handleUp);
+    };
+  }, [dragging]);
 
   return (
     <div
