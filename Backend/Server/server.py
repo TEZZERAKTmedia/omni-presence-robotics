@@ -10,7 +10,8 @@ from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
 from joystick_terrain import drive_from_terrain_joystick
-from cat_toy_servo import control_cat_toy
+from cat_toy_controller import control_cat_toy
+import time
 from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 from camera import Camera
@@ -202,8 +203,9 @@ if __name__ == '__main__':
                             print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
                             control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
                         elif msg_type == "cat-toy":
-                            print(f"[CAT TOY] Direction: {payload.get('direction')}")
-                            control_cat_toy(payload.get("direction"))
+                            direction = payload.get('direction', 'stop')
+                            print(f"[CAT TOY] Direction: {direction}")
+                            control_cat_toy(direction)
 
                         else:
                             print(f"[WARN] Unhandled message type: {msg_type}")

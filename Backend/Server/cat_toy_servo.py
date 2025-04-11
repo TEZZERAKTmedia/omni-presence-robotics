@@ -1,17 +1,50 @@
 from servo import Servo
+import threading
+import time
 
-servo_controller = Servo()
+class CatToyController:
+    def __init__(self, channel='2'):
+        self.servo = Servo()
+        self.channel = channel
+        self.pwm_channel = self.servo.pwm_channel_map[channel]
+        self.current_direction = 'stop'
+        self.running = False
+        self.thread = None
 
-def control_cat_toy(direction, str=None):
-    channel = '2'  # PWM channel 10 in your Servo class
-    pwm_channel = servo_controller.pwm_channel_map[channel]
+    def _run_servo(self, pulse_width):
+        print(f"[CAT TOY] Sending pulse width: {pulse_width}")
+        while self.running:
+            self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse_width)
+            time.sleep(0.05)  # Send pulse repeatedly (every 50 ms)
 
-    if direction == 'left':
-        print("[CAT TOY] Spinning left")
-        servo_controller.pwm_servo.set_servo_pulse(pwm_channel, 1000)  # Fast left
-    elif direction == 'right':
-        print("[CAT TOY] Spinning right")
-        servo_controller.pwm_servo.set_servo_pulse(pwm_channel, 2000)  # Fast right
-    else:
-        print("[CAT TOY] Stopping")
-        servo_controller.pwm_servo.set_servo_pulse(pwm_channel, 1500)  # Stop
+        # When stopped, set pulse to 0 (servo off)
+        print("[CAT TOY] Servo stopped, setting pulse to 0")
+        self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, 0)
+
+    def set_direction(self, direction):
+        if direction == self.current_direction:
+            return  # No change needed
+
+        self.current_direction = direction
+
+        # Stop current thread if running
+        if self.thread and self.thread.is_alive():
+            self.running = False
+            self.thread.join()
+
+        if direction == 'left':
+            pulse = 1200  # Adjust as needed
+        elif direction == 'right':
+            pulse = 1800  # Adjust as needed
+        else:  # 'stop'
+            pulse = 0
+            self.servo.pwm_servo.set_servo_pulse(self.pwm_channel, pulse)
+            return
+
+        # Start new thread to continuously send pulses
+        self.running = True
+        self.thread = threading.Thread(target=self._run_servo, args=(pulse,))
+        self.thread.start()
+
+    def stop(self):
+        self.set_direction('stop')
