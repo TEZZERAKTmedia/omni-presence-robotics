@@ -203,23 +203,8 @@ if __name__ == '__main__':
 
  
                         elif msg_type == "camera-servo":
-                            pan = payload.get("pan", 0)
-                            tilt = payload.get("tilt", 0)
-
-                            print(f"[CAMERA JOYSTICK] pan={pan} tilt={tilt}")
-                            control_camera_servo(pan, tilt)
-
-                            # Check if tilt is all the way forward
-                            if abs(pan) < 0.05 and tilt >= 0.95 and not camera_fully_tilted:
-                                print("[CAMERA AUTO] Joystick fully forward – locking camera downward")
-                                # Optional: re-send tilt to ensure it's in place
-                                control_camera_servo(0, 1)
-                                camera_fully_tilted = True
-                            elif tilt < 0.9 and camera_fully_tilted:
-                                # Reset lock if tilt pulled back
-                                print("[CAMERA AUTO] Joystick tilt released – unlocking camera auto tilt")
-                                camera_fully_tilted = False
-
+                            print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
+                            control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
                         elif msg_type == "cat-toy":
                             direction = payload.get('direction', 'stop')
                             speed = payload.get('speed', 1)

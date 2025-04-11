@@ -13,6 +13,7 @@ export default function TerrainJoystickController() {
     connectWebSocket('ws://localhost:8001');
   }, []);
 
+  // Update position and send drive payload plus camera payload
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -30,23 +31,24 @@ export default function TerrainJoystickController() {
     const normX = clampedX / radius;
     const normY = clampedY / radius;
 
-    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2); // turn
-    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2); // forward/backward
+    // Use dead-zone filtering
+    const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
+    const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
 
-    // 🧠 Improved tank-style drive with pivot-in-place handling
+    // Improved tank-style drive with pivot-in-place handling
     const forward = yInput;
     const turn = forward === 0 ? xInput : xInput * 0.6;
 
     let left = forward - turn;
     let right = forward + turn;
 
-    // Clamp to [-1, 1]
     const max = Math.max(1, Math.abs(left), Math.abs(right));
     left /= max;
     right /= max;
 
     setPosition({ x: clampedX, y: clampedY });
 
+    // Send terrain drive command
     sendCommand({
       type: 'terrain',
       payload: {
@@ -55,6 +57,13 @@ export default function TerrainJoystickController() {
         frontRight: right,
         backRight: right
       }
+    });
+    
+    // Additionally, send a camera joystick payload with tilt fully "up"
+    // This mimics pressing the D-pad up: pan = 0, tilt = 1.
+    sendCommand({
+      type: 'camera-servo',
+      payload: { pan: 0, tilt: 1 }
     });
   };
 
@@ -76,19 +85,18 @@ export default function TerrainJoystickController() {
   useEffect(() => {
     const handleMove = (e) => {
       if (!padRef.current || !dragging) return;
-  
       const event = e.touches ? e.touches[0] : e;
-      updatePosition(event); // 👈 update relative to joystick center
+      updatePosition(event); // update relative to joystick center
     };
-  
+
     const handleUp = () => reset();
-  
+
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('touchend', handleUp);
-    window.addEventListener('mouseleave', handleUp); // Optional
-  
+    window.addEventListener('mouseleave', handleUp);
+
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
@@ -97,22 +105,21 @@ export default function TerrainJoystickController() {
       window.removeEventListener('mouseleave', handleUp);
     };
   }, [dragging]);
-  
-  
-  
 
   return (
-    <div className='outer-terrain-joystick-container'>
+    <div className="outer-terrain-joystick-container">
       <div
         ref={padRef}
         className="terrain-joystick-container"
         onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-        
         onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
         onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
         onTouchEnd={reset}
       >
-        <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
+        <div
+          className="joystick-knob"
+          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        />
       </div>
     </div>
   );
