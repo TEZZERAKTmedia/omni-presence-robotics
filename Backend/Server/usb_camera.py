@@ -1,7 +1,7 @@
 import cv2
 
 class USBCamera:
-    def __init__(self, device_index=1, width=640, height=480):
+    def __init__(self, device_index=0, width=640, height=480):
         self.cap = cv2.VideoCapture(device_index)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
