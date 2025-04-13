@@ -1,8 +1,26 @@
 import cv2
+import os
 
 class USBCamera:
-    def __init__(self, device_index=0, width=640, height=480):
-        self.cap = cv2.VideoCapture(device_index)
+    def __init__(self, width=640, height=480):
+        self.cap = None
+
+        for index in range(2):  # test video0 and video1
+            device = f"/dev/video{index}"
+            if os.path.exists(device):
+                cap = cv2.VideoCapture(index)
+                if cap.isOpened():
+                    ret, _ = cap.read()
+                    if ret:
+                        self.cap = cap
+                        print(f"[✅ USB CAMERA] Opened {device}")
+                        break
+                    else:
+                        cap.release()
+
+        if self.cap is None:
+            raise RuntimeError("[USB CAMERA ERROR] ❌ No usable /dev/videoX device found")
+
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
@@ -11,10 +29,8 @@ class USBCamera:
         if not ret:
             return b""
         ret, jpeg = cv2.imencode('.jpg', frame)
-        if not ret:
-            return b""
-        return jpeg.tobytes()
+        return jpeg.tobytes() if ret else b""
 
     def release(self):
-        self.cap.release()
- 
+        if self.cap:
+            self.cap.release()
