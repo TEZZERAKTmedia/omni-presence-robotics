@@ -45,7 +45,7 @@ camera_fully_tilted = False
 # -----------------------------------------------------------------------------
 # WebSocket Stream Handlers for Video
 # -----------------------------------------------------------------------------
-async def csi_stream_handler(websocket, path):
+async def csi_stream_handler(websocket, path=None):
     print("📡 CSI Camera client connected; path:", path)
     try:
         while True:
@@ -58,7 +58,7 @@ async def csi_stream_handler(websocket, path):
     except Exception as e:
         print(f"🚨 CSI stream error: {e}")
 
-async def usb_stream_handler(websocket, path):
+async def usb_stream_handler(websocket, path=None):
     print("📡 USB Camera client connected; path:", path)
     try:
         while True:
