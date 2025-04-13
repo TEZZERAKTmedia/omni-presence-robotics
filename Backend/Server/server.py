@@ -27,7 +27,7 @@ pi_camera = Camera()
 pi_streamer = CameraStreamer(pi_camera, fps=20)
 
 # USB Camera (using a standard USB webcam via OpenCV)
-usb_camera = USBCamera() 
+usb_camera = USBCamera(device_index=0)  
 usb_streamer = CameraStreamer(usb_camera, fps=20)
 
 # Start both streamers
@@ -45,8 +45,7 @@ camera_fully_tilted = False
 # -----------------------------------------------------------------------------
 # WebSocket Stream Handlers for Video
 # -----------------------------------------------------------------------------
-# Use default value for path so that if only one argument is given the handler still works.
-async def csi_stream_handler(websocket, path=None):
+async def csi_stream_handler(websocket, path):
     print("📡 CSI Camera client connected; path:", path)
     try:
         while True:
@@ -59,14 +58,14 @@ async def csi_stream_handler(websocket, path=None):
     except Exception as e:
         print(f"🚨 CSI stream error: {e}")
 
-async def usb_stream_handler(websocket, path=None):
+async def usb_stream_handler(websocket, path):
     print("📡 USB Camera client connected; path:", path)
     try:
         while True:
             frame = usb_streamer.get_frame()
             if frame:
                 await websocket.send(frame)
-            await asyncio.sleep(0.05)  # ~20 FPS
+            await asyncio.sleep(0.05)
     except websockets.exceptions.ConnectionClosed:
         print("❌ USB Camera client disconnected")
     except Exception as e:
@@ -75,12 +74,12 @@ async def usb_stream_handler(websocket, path=None):
 async def start_csi_video_ws_server():
     print("📺 Starting CSI Camera WebSocket stream on port 8765")
     async with websockets.serve(csi_stream_handler, "0.0.0.0", 8765):
-        await asyncio.Future()  # Run forever
+        await asyncio.Future()  # Keep running
 
 async def start_usb_video_ws_server():
     print("📺 Starting USB Camera WebSocket stream on port 8770")
     async with websockets.serve(usb_stream_handler, "0.0.0.0", 8770):
-        await asyncio.Future()  # Run forever
+        await asyncio.Future()
 
 def run_async_server(coro):
     loop = asyncio.new_event_loop()
@@ -89,10 +88,12 @@ def run_async_server(coro):
     loop.run_forever()
 
 def run_csi_video_server_in_thread():
-    threading.Thread(target=lambda: run_async_server(start_csi_video_ws_server()), daemon=True).start()
+    t = threading.Thread(target=lambda: run_async_server(start_csi_video_ws_server()), daemon=True)
+    t.start()
 
 def run_usb_video_server_in_thread():
-    threading.Thread(target=lambda: run_async_server(start_usb_video_ws_server()), daemon=True).start()
+    t = threading.Thread(target=lambda: run_async_server(start_usb_video_ws_server()), daemon=True)
+    t.start()
 
 # Start the video stream servers in separate threads
 run_csi_video_server_in_thread()
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
-    # 🎮 Command WebSocket server (port 8001)
+    # Start the command WebSocket server on port 8001
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
@@ -183,11 +184,11 @@ if __name__ == '__main__':
 
     try:
         while True:
+            # Check for incoming commands
             cmd_queue = server.read_data_from_command_server()
             if cmd_queue.qsize() > 0:
                 client_address, message = cmd_queue.get()
                 print(f"[INCOMING] {client_address}: {message}")
-
                 if client_address == "websocket_ui":
                     try:
                         data = json.loads(message)
@@ -234,6 +235,7 @@ if __name__ == '__main__':
                 else:
                     server.send_data_to_command_client(message, client_address)
 
+            # Process outgoing video commands
             video_queue = server.read_data_from_video_server()
             if video_queue.qsize() > 0:
                 client_address, message = video_queue.get()
