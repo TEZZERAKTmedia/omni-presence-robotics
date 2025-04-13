@@ -5,77 +5,103 @@ import asyncio
 import threading
 import json
 import websockets
+import time
+
 from infrared import Infrared 
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
 from joystick_terrain import drive_from_terrain_joystick
 from cat_toy_servo import control_cat_toy
-
-import time
+from usb_camera import USBCamera
 from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 from camera import Camera
 from camera_streamer import CameraStreamer
 
-# Initialize camera and start persistent frame capture
-global_camera = Camera()
-streamer = CameraStreamer(global_camera)
-streamer.start()
+# -----------------------------------------------------------------------------
+# Initialize Cameras and Streamers
+# -----------------------------------------------------------------------------
+# CSI Camera (using the Pi camera via the CSI interface)
+pi_camera = Camera()                   
+pi_streamer = CameraStreamer(pi_camera, fps=20)
+
+# USB Camera (using a standard USB webcam via OpenCV)
+usb_camera = USBCamera(device_index=0)  
+usb_streamer = CameraStreamer(usb_camera, fps=20)
+
+# Start both streamers
+pi_streamer.start()
+usb_streamer.start()
+
+# For backward compatibility, set global_camera and streamer to the CSI camera
+global_camera = pi_camera
+streamer = pi_streamer
+
+# Initialize Infrared sensor and other flags
 infrared = Infrared()
 camera_fully_tilted = False
 
-
-# ----------------------------
-# Robust WebSocket stream handler
-# ----------------------------
-async def stream_handler(*args, **kwargs):
-    # Handle argument unpacking from websockets.serve
-    if len(args) >= 2:
-        websocket, path = args[0], args[1]
-    elif len(args) == 1:
-        websocket = args[0]
-        path = None
-        print("⚠️ Warning: No path provided in handler arguments")
-    else:
-        raise TypeError("stream_handler() requires at least 1 argument")
-
-    print("📡 Video client connected; path:", path)
-
+# -----------------------------------------------------------------------------
+# WebSocket Stream Handlers for Video
+# -----------------------------------------------------------------------------
+async def csi_stream_handler(websocket, path):
+    print("📡 CSI Camera client connected; path:", path)
     try:
         while True:
             frame = streamer.get_frame()
             if frame:
                 await websocket.send(frame)
-            await asyncio.sleep(0.05)  # Stream ~20 FPS
+            await asyncio.sleep(0.05)  # ~20 FPS
     except websockets.exceptions.ConnectionClosed:
-        print("❌ Video client disconnected")
+        print("❌ CSI Camera client disconnected")
     except Exception as e:
-        print(f"🚨 Video stream error: {e}")
+        print(f"🚨 CSI stream error: {e}")
 
+async def usb_stream_handler(websocket, path):
+    print("📡 USB Camera client connected; path:", path)
+    try:
+        while True:
+            frame = usb_streamer.get_frame()
+            if frame:
+                await websocket.send(frame)
+            await asyncio.sleep(0.05)
+    except websockets.exceptions.ConnectionClosed:
+        print("❌ USB Camera client disconnected")
+    except Exception as e:
+        print(f"🚨 USB stream error: {e}")
 
-# ----------------------------
-# Video WebSocket server
-# ----------------------------
-async def start_video_ws_server():
-    print("📺 Starting WebSocket video stream on port 8765")
-    async with websockets.serve(stream_handler, "0.0.0.0", 8765):
-        await asyncio.Future()  # Keep the server running
+async def start_csi_video_ws_server():
+    print("📺 Starting CSI Camera WebSocket stream on port 8765")
+    async with websockets.serve(csi_stream_handler, "0.0.0.0", 8765):
+        await asyncio.Future()  # Keep running
 
+async def start_usb_video_ws_server():
+    print("📺 Starting USB Camera WebSocket stream on port 8770")
+    async with websockets.serve(usb_stream_handler, "0.0.0.0", 8770):
+        await asyncio.Future()
 
-# ----------------------------
-# Run video WebSocket in a separate thread
-# ----------------------------
-def run_video_server_in_thread():
+def run_async_server(coro):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_video_ws_server())
+    loop.run_until_complete(coro)
     loop.run_forever()
 
+def run_csi_video_server_in_thread():
+    t = threading.Thread(target=lambda: run_async_server(start_csi_video_ws_server()), daemon=True)
+    t.start()
 
-# ----------------------------
-# TCP Server Wrapper
-# ----------------------------
+def run_usb_video_server_in_thread():
+    t = threading.Thread(target=lambda: run_async_server(start_usb_video_ws_server()), daemon=True)
+    t.start()
+
+# Start the video stream servers in separate threads
+run_csi_video_server_in_thread()
+run_usb_video_server_in_thread()
+
+# -----------------------------------------------------------------------------
+# TCP Server Wrapper for Commands and Video
+# -----------------------------------------------------------------------------
 class Server:
     def __init__(self):
         self.ip_address = self.get_interface_ip()
@@ -141,76 +167,63 @@ class Server:
     def read_data_from_video_server(self):
         return self.video_server.message_queue
 
-
-# ----------------------------
-# Main Server Loop
-# ----------------------------
+# -----------------------------------------------------------------------------
+# Main Server Loop: Process Incoming Commands
+# -----------------------------------------------------------------------------
 if __name__ == '__main__':
     print("[SERVER] Starting...")
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
-    # 🎮 Command WebSocket server (port 8001)
+    # Start the command WebSocket server on port 8001
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
     )
     ws_thread.start()
 
-    # 📹 Video WebSocket stream server (port 8765)
-    video_ws_thread = threading.Thread(
-        target=run_video_server_in_thread,
-        daemon=True
-    )
-    video_ws_thread.start()
-
     try:
         while True:
+            # Check for incoming commands
             cmd_queue = server.read_data_from_command_server()
             if cmd_queue.qsize() > 0:
                 client_address, message = cmd_queue.get()
                 print(f"[INCOMING] {client_address}: {message}")
-
                 if client_address == "websocket_ui":
                     try:
                         data = json.loads(message)
                         payload = data.get("payload", {})
                         msg_type = data.get("type")
-                       
 
                         if msg_type == "joystick":
-                                fl = payload.get("frontLeft", 0)
-                                fr = payload.get("frontRight", 0)
-                                bl = payload.get("backLeft", 0)
-                                br = payload.get("backRight", 0)
-
-                                # Simple obstacle avoidance (optional: only check if all motors are moving forward-ish)
-                                if (fl > 0 or fr > 0 or bl > 0 or br > 0) and infrared.read_all_infrared() != 0:
-                                    print("[INFRARED] Obstacle detected. Blocking forward movement.")
-                                    fl = fr = bl = br = 0
-
-                                print(f"[JOYSTICK] FL={fl}, FR={fr}, BL={bl}, BR={br}")
-                                drive_mecanum_joystick(fl, fr, bl, br)
+                            fl = payload.get("frontLeft", 0)
+                            fr = payload.get("frontRight", 0)
+                            bl = payload.get("backLeft", 0)
+                            br = payload.get("backRight", 0)
+                            # Simple obstacle avoidance based on infrared sensor
+                            if (fl > 0 or fr > 0 or bl > 0 or br > 0) and infrared.read_all_infrared() != 0:
+                                print("[INFRARED] Obstacle detected. Blocking forward movement.")
+                                fl = fr = bl = br = 0
+                            print(f"[JOYSTICK] FL={fl}, FR={fr}, BL={bl}, BR={br}")
+                            drive_mecanum_joystick(fl, fr, bl, br)
 
                         elif msg_type == "terrain":
                             fl = payload.get("frontLeft", 0)
                             fr = payload.get("frontRight", 0)
                             bl = payload.get("backLeft", 0)
                             br = payload.get("backRight", 0)
-
                             print(f"[TERRAIN] FL={fl}, FR={fr}, BL={bl}, BR={br}")
                             drive_from_terrain_joystick(fl, fr, bl, br)
 
- 
                         elif msg_type == "camera-servo":
                             print(f"[CAMERA JOYSTICK] pan={payload.get('pan')} tilt={payload.get('tilt')}")
                             control_camera_servo(payload.get("pan", 0), payload.get("tilt", 0))
+
                         elif msg_type == "cat-toy":
-                            direction = payload.get('direction', 'stop')
-                            speed = payload.get('speed', 1)
+                            direction = payload.get("direction", "stop")
+                            speed = payload.get("speed", 1)
                             print(f"[CAT TOY] Direction: {direction}, Speed: {speed}")
                             control_cat_toy(direction, speed)
-
 
                         else:
                             print(f"[WARN] Unhandled message type: {msg_type}")
@@ -218,16 +231,16 @@ if __name__ == '__main__':
                     except json.JSONDecodeError:
                         print("[ERROR] Invalid JSON from WebSocket:", message)
                     except Exception as e:
-                        print("[ERROR] Failed to handle input:", e)
+                        print(f"[ERROR] Failed to handle input: {e}")
                 else:
                     server.send_data_to_command_client(message, client_address)
 
+            # Process outgoing video commands
             video_queue = server.read_data_from_video_server()
             if video_queue.qsize() > 0:
                 client_address, message = video_queue.get()
                 print(f"[VIDEO] {client_address}: {message}")
                 server.send_data_to_video_client(message, client_address)
-           
 
     except KeyboardInterrupt:
         print("[SHUTDOWN] Stopping server...")
