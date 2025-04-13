@@ -3,6 +3,8 @@ import cv2
 class USBCamera:
     def __init__(self, device_index=0, width=640, height=480):
         self.cap = cv2.VideoCapture(device_index)
+        if not self.cap.isOpened():
+            raise RuntimeError(f"[USB CAMERA ERROR] Failed to open /dev/video{device_index}")
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
@@ -11,10 +13,7 @@ class USBCamera:
         if not ret:
             return b""
         ret, jpeg = cv2.imencode('.jpg', frame)
-        if not ret:
-            return b""
-        return jpeg.tobytes()
+        return jpeg.tobytes() if ret else b""
 
     def release(self):
         self.cap.release()
- 
