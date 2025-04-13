@@ -1,36 +1,26 @@
-import cv2
-import os
+import ffmpeg
+import numpy as np
 
 class USBCamera:
-    def __init__(self, width=640, height=480):
-        self.cap = None
-
-        for index in range(10):  # 🔧 Check up to /dev/video9
-            device = f"/dev/video{index}"
-            if os.path.exists(device):
-                cap = cv2.VideoCapture(index)
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        self.cap = cap
-                        print(f"[✅ USB CAMERA] Opened {device}")
-                        break
-                    else:
-                        cap.release()
-
-        if self.cap is None:
-            raise RuntimeError("[USB CAMERA ERROR] ❌ No usable /dev/videoX device found")
-
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    def __init__(self, device="/dev/video0", width=640, height=480):
+        self.device = device
+        self.width = width
+        self.height = height
+        self.process = (
+            ffmpeg
+            .input(device, format='v4l2', framerate=30, video_size=f'{width}x{height}')
+            .output('pipe:', format='rawvideo', pix_fmt='rgb24')
+            .run_async(pipe_stdout=True)
+        )
+        print(f"[✅ USB CAMERA] Capturing from {device}")
 
     def capture_frame(self) -> bytes:
-        ret, frame = self.cap.read()
-        if not ret:
-            return b""
-        ret, jpeg = cv2.imencode('.jpg', frame)
-        return jpeg.tobytes() if ret else b""
+        frame_size = self.width * self.height * 3  # RGB
+        in_bytes = self.process.stdout.read(frame_size)
+        if len(in_bytes) != frame_size:
+            return b''
+        return in_bytes  # Can convert to image if needed
 
     def release(self):
-        if self.cap:
-            self.cap.release()
+        self.process.stdout.close()
+        self.process.wait()
