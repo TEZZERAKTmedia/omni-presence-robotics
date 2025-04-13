@@ -26,8 +26,9 @@ from camera_streamer import CameraStreamer
 pi_camera = Camera()                   
 pi_streamer = CameraStreamer(pi_camera, fps=20)
 
-# USB Camera (using a standard USB webcam via OpenCV)
+usb_camera = USBCamera()  # ✅ Instantiate the USB camera
 usb_streamer = CameraStreamer(usb_camera, fps=20)
+
 
 # Start both streamers
 pi_streamer.start()
