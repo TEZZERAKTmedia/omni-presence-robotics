@@ -5,7 +5,7 @@ class USBCamera:
     def __init__(self, width=640, height=480):
         self.cap = None
 
-        for index in range(2):  # test video0 and video1
+        for index in range(3):  # test video0 and video1
             device = f"/dev/video{index}"
             if os.path.exists(device):
                 cap = cv2.VideoCapture(index)
