@@ -27,7 +27,6 @@ pi_camera = Camera()
 pi_streamer = CameraStreamer(pi_camera, fps=20)
 
 # USB Camera (using a standard USB webcam via OpenCV)
-usb_camera = USBCamera(device_index=0)  
 usb_streamer = CameraStreamer(usb_camera, fps=20)
 
 # Start both streamers
