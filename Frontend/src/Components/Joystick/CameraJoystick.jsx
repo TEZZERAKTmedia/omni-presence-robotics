@@ -11,10 +11,12 @@ export default function CameraJoystick() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [panTilt, setPanTilt] = useState({ pan: 0, tilt: 0 });
 
+  // Connect to WebSocket on load
   useEffect(() => {
     connectWebSocket('ws://localhost:8001');
   }, []);
 
+  // Send joystick updates on interval while dragging
   useEffect(() => {
     if (!dragging) return;
     const interval = setInterval(() => {
@@ -22,9 +24,11 @@ export default function CameraJoystick() {
     }, UPDATE_INTERVAL);
     return () => clearInterval(interval);
   }, [dragging, panTilt]);
+
+  // Handle drag motion
   useEffect(() => {
     if (!dragging) return;
-  
+
     const handleMove = (e) => {
       if (e.touches) {
         updatePosition(e.touches[0]);
@@ -32,14 +36,14 @@ export default function CameraJoystick() {
         updatePosition(e);
       }
     };
-  
+
     const handleUp = () => reset();
-  
+
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('touchend', handleUp);
-  
+
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
@@ -47,8 +51,8 @@ export default function CameraJoystick() {
       window.removeEventListener('touchend', handleUp);
     };
   }, [dragging]);
-  
 
+  // Update joystick visual and send normalized pan/tilt
   const updatePosition = (e) => {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -67,12 +71,15 @@ export default function CameraJoystick() {
     const normY = +(clampedY / radius).toFixed(2);
 
     setPosition({ x: clampedX, y: clampedY });
+
+    // Note: Flip Y for tilt and clamp with dead zone
     setPanTilt({
       pan: Math.abs(normX) < DEAD_ZONE ? 0 : normX,
       tilt: Math.abs(normY) < DEAD_ZONE ? 0 : -normY
     });
   };
 
+  // Reset joystick to center
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
@@ -81,12 +88,10 @@ export default function CameraJoystick() {
   };
 
   return (
-    
     <div
       ref={padRef}
       className="joystick-container"
       onMouseDown={(e) => { setDragging(true); updatePosition(e); }}
-      
       onTouchStart={(e) => { setDragging(true); updatePosition(e.touches[0]); }}
       onTouchMove={(e) => dragging && updatePosition(e.touches[0])}
       onTouchEnd={reset}
@@ -97,6 +102,5 @@ export default function CameraJoystick() {
       <button onClick={() => setPanTilt({ pan: 0, tilt: 1 })} className="joystick-arrow up">⬆️</button>
       <button onClick={() => setPanTilt({ pan: 0, tilt: -1 })} className="joystick-arrow down">⬇️</button>
     </div>
-    
   );
 }
