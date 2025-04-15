@@ -7,12 +7,12 @@ class CameraServoController:
         self.servo = Servo()
         self.pan_channel = self.servo.pwm_channel_map[pan_channel]
         self.tilt_channel = self.servo.pwm_channel_map[tilt_channel]
-        
+
         self.running = False
         self.pan_thread = None
         self.tilt_thread = None
-        self.pan_ref = [1500]  # Default pulse
-        self.tilt_ref = [1500]
+        self.pan_ref = [0]  # Start at neutral pulse
+        self.tilt_ref = [0]
 
         self.lock = threading.Lock()
 
@@ -31,11 +31,19 @@ class CameraServoController:
         print(f"[CAMERA SERVO] {label} stopped")
 
     def update_servo(self, pan_norm: float, tilt_norm: float):
+        # Clamp to range [-1.0, 1.0]
         pan_norm = max(min(pan_norm, 1.0), -1.0)
         tilt_norm = max(min(tilt_norm, 1.0), -1.0)
 
-        pan_pulse = int(1500 + (pan_norm * 500))  # Range: 1000–2000
-        tilt_pulse = int(1500 + (tilt_norm * 500))
+        # Convert joystick input to PWM pulses
+        pan_pulse = int(abs(pan_norm) * 1000) if abs(pan_norm) >= 0.05 else 0
+        tilt_pulse = int(abs(tilt_norm) * 1000) if abs(tilt_norm) >= 0.05 else 0
+
+        pan_dir = "right" if pan_norm > 0 else "left"
+        tilt_dir = "up" if tilt_norm > 0 else "down"
+
+        print(f"[INPUT] pan={pan_norm}, tilt={tilt_norm}")
+        print(f"[CAMERA SERVO] Pan: {pan_dir} {pan_pulse} | Tilt: {tilt_dir} {tilt_pulse}")
 
         with self.lock:
             self.pan_ref[0] = pan_pulse
@@ -58,9 +66,8 @@ class CameraServoController:
         self.servo.pwm_servo.set_servo_pulse(self.tilt_channel, 0)
         print("[CAMERA SERVO] Both servos stopped")
 
-# Singleton controller
+# Singleton instance
 camera_servo_controller = CameraServoController()
 
 def control_camera_servo(pan: float, tilt: float):
-    print(f"[INPUT] pan={pan}, tilt={tilt}")
     camera_servo_controller.update_servo(pan, tilt)
