@@ -11,12 +11,12 @@ class CameraServoController:
         self.running = False
         self.pan_thread = None
         self.tilt_thread = None
-        self.pan_ref = [0]   # neutral (stopped)
-        self.tilt_ref = [0]
+        self.pan_ref = [1500]
+        self.tilt_ref = [1500]
 
         self.lock = threading.Lock()
 
-        # Ensure both are stopped at boot
+        # On boot, stop both servos
         self.servo.pwm_servo.set_servo_pulse(self.pan_channel, 0)
         self.servo.pwm_servo.set_servo_pulse(self.tilt_channel, 0)
 
@@ -34,9 +34,9 @@ class CameraServoController:
         pan_norm = max(min(pan_norm, 1.0), -1.0)
         tilt_norm = max(min(tilt_norm, 1.0), -1.0)
 
-        # Convert normalized values into directional signed pulses
-        pan_pulse = int(pan_norm * 1000) if abs(pan_norm) >= 0.05 else 0
-        tilt_pulse = int(tilt_norm * 1000) if abs(tilt_norm) >= 0.05 else 0
+        # 0.05 dead zone around center
+        pan_pulse = 0 if abs(pan_norm) < 0.05 else int(1500 + (pan_norm * 500))
+        tilt_pulse = 0 if abs(tilt_norm) < 0.05 else int(1500 + (tilt_norm * 500))
 
         with self.lock:
             self.pan_ref[0] = pan_pulse
@@ -59,8 +59,6 @@ class CameraServoController:
         self.servo.pwm_servo.set_servo_pulse(self.tilt_channel, 0)
         print("[CAMERA SERVO] Both servos stopped")
 
-
-# Singleton instance
 camera_servo_controller = CameraServoController()
 
 def control_camera_servo(pan: float, tilt: float):
