@@ -10,7 +10,7 @@ class CameraServoController:
         self.running = False
         self.pan_thread = None
         self.tilt_thread = None
-        self.current_pan = 1500
+        self.current_pan = 0000
         self.current_tilt = 1500
 
         self.lock = threading.Lock()
