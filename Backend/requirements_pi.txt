@@ -1,0 +1,7 @@
+# Extend the base requirements
+-r requirements.txt
+
+# Pi-specific things (usually installed with apt, not pip)
+# Listed here for documentation/reference
+gpiozero
+picamera2

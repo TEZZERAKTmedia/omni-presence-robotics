@@ -1,5 +1,7 @@
-PyQt5
-Pillow
 numpy
+Pillow
+PyQt5
 opencv-python-headless
-
+ffmpeg-python
+gpiozero  # <-- optional, only works on Pi
+picamera2  # <-- optional, only works on Pi
