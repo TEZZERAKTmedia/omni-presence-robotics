@@ -47,24 +47,17 @@ export default function JoystickController() {
   
     setPosition({ x: clampedX, y: clampedY });
   
-    // Send drive joystick payload
+    // Only send joystick payload (no tilt control)
     sendCommand({
       type: 'joystick',
       payload: { frontLeft: fl, frontRight: fr, backLeft: bl, backRight: br }
-    });
-
-    // Additionally, send a camera command (simulate D-pad up: pan = 0, tilt = 1)
-    sendCommand({
-      type: 'camera-servo',
-      payload: { pan: 0, tilt: 1 }
     });
   };
 
   const reset = () => {
     setDragging(false);
     setPosition({ x: 0, y: 0 });
-  
-    // Buffer before final zeroing
+
     setTimeout(() => {
       sendCommand({
         type: 'joystick',
@@ -123,7 +116,6 @@ export default function JoystickController() {
     >
       <div className="joystick-knob" style={{ transform: `translate(${position.x}px, ${position.y}px)` }} />
 
-      {/* D-Pad Buttons */}
       <button onClick={() => sendDpadCommand(-1, 1, -1, 1)} className="joystick-arrow left">⬅️</button>
       <button onClick={() => sendDpadCommand(1, -1, 1, -1)} className="joystick-arrow right">➡️</button>
       <button onClick={() => sendDpadCommand(1, 1, 1, 1)} className="joystick-arrow up">⬆️</button>
