@@ -18,37 +18,35 @@ export default function TerrainJoystickController() {
     const rect = padRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-
+  
     const x = e.clientX - centerX;
     const y = e.clientY - centerY;
     const radius = rect.width / 2;
-
+  
     const distance = Math.min(Math.sqrt(x * x + y * y), radius);
     const angle = Math.atan2(y, x);
     const clampedX = distance * Math.cos(angle);
     const clampedY = distance * Math.sin(angle);
-
+  
     const normX = clampedX / radius;
     const normY = clampedY / radius;
-
-    // Use dead-zone filtering
+  
     const xInput = Math.abs(normX) < DEAD_ZONE ? 0 : +normX.toFixed(2);
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
-
-    // Improved tank-style drive with pivot-in-place handling
+  
     const forward = yInput;
     const turn = forward === 0 ? xInput : xInput * 0.6;
-
+  
     let left = forward - turn;
     let right = forward + turn;
-
+  
     const max = Math.max(1, Math.abs(left), Math.abs(right));
     left /= max;
     right /= max;
-
+  
     setPosition({ x: clampedX, y: clampedY });
-
-    // Send terrain drive command
+  
+    // Only send terrain drive command now (no camera tilt)
     sendCommand({
       type: 'terrain',
       payload: {
@@ -58,14 +56,8 @@ export default function TerrainJoystickController() {
         backRight: right
       }
     });
-    
-    // Additionally, send a camera joystick payload with tilt fully "up"
-    // This mimics pressing the D-pad up: pan = 0, tilt = 1.
-    sendCommand({
-      type: 'camera-servo',
-      payload: { pan: 0, tilt: 1 }
-    });
   };
+  
 
   const reset = () => {
     setDragging(false);
