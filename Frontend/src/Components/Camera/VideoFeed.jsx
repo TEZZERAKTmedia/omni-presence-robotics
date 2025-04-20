@@ -1,24 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './video.css';
 
 const VideoFeed = () => {
-  // State for storing the latest image
-  const [imageSrc, setImageSrc] = useState('');
-  // Reference to the container element (for fullscreen toggling)
   const containerRef = useRef(null);
-  // Reference to the current WebSocket connection
   const socketRef = useRef(null);
-  // Reference to a reconnect interval timer
   const reconnectRef = useRef(null);
-  // State for the active camera selection ("CSI" or "USB")
+  const imageRef = useRef(null);
   const [activeCamera, setActiveCamera] = useState('USB');
 
-  // Decide the WebSocket URL based on the active camera.
-  // For example, use port 8765 for the CSI camera and 8770 for the USB camera.
-  const wsUrl = activeCamera === 'CSI' ? 'ws://localhost:8765' : 'ws://localhost:8770';
+  const wsUrl = activeCamera === 'CSI'
+    ? 'ws://localhost:8765'
+    : 'ws://localhost:8770';
 
   useEffect(() => {
-    // Function to connect to the WebSocket for video streaming.
     const connectSocket = () => {
       console.log(`Connecting to video stream: ${wsUrl}`);
       const socket = new WebSocket(wsUrl);
@@ -29,13 +23,12 @@ const VideoFeed = () => {
         clearInterval(reconnectRef.current);
       };
 
-      // When a message is received, update the image source
       socket.onmessage = (event) => {
         if (event.data && event.data.length > 100) {
-          console.log("[WebSocket] Received data:", event.data.slice(0, 50)); // Just to check it's a base64 string
-
-          // Assume event.data is Base64-encoded JPEG data
-          setImageSrc(`data:image/jpeg;base64,${event.data}`);
+          const frameUrl = `data:image/jpeg;base64,${event.data}`;
+          if (imageRef.current) {
+            imageRef.current.src = frameUrl;
+          }
         }
       };
 
@@ -45,7 +38,6 @@ const VideoFeed = () => {
 
       socket.onclose = () => {
         console.warn('[WebSocket] Video stream disconnected, attempting to reconnect...');
-        // Reconnect every 2 seconds if the connection closes
         reconnectRef.current = setInterval(() => {
           if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
             connectSocket();
@@ -56,7 +48,6 @@ const VideoFeed = () => {
 
     connectSocket();
 
-    // Cleanup on component unmount or when the activeCamera changes
     return () => {
       clearInterval(reconnectRef.current);
       if (socketRef.current) {
@@ -65,7 +56,6 @@ const VideoFeed = () => {
     };
   }, [wsUrl, activeCamera]);
 
-  // Toggle full screen when the container is clicked
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -74,10 +64,10 @@ const VideoFeed = () => {
     }
   };
 
-  // Handle camera selection change from the dropdown
   const handleCameraChange = (event) => {
-    // Clear the current image and set the new active camera
-    setImageSrc('');
+    if (imageRef.current) {
+      imageRef.current.src = ''; // Clear old frame
+    }
     setActiveCamera(event.target.value);
   };
 
@@ -97,13 +87,11 @@ const VideoFeed = () => {
         </select>
       </div>
 
-      {imageSrc ? (
-        <img src={imageSrc} alt="Live Feed" />
-      ) : (
-        <p style={{ color: '#fff', textAlign: 'center' }}>
-          Waiting for video stream...
-        </p>
-      )}
+      <img
+        ref={imageRef}
+        alt="Live Feed"
+        style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+      />
     </div>
   );
 };
