@@ -32,6 +32,8 @@ const VideoFeed = () => {
       // When a message is received, update the image source
       socket.onmessage = (event) => {
         if (event.data && event.data.length > 100) {
+          console.log("[WebSocket] Received data:", event.data.slice(0, 50)); // Just to check it's a base64 string
+
           // Assume event.data is Base64-encoded JPEG data
           setImageSrc(`data:image/jpeg;base64,${event.data}`);
         }
