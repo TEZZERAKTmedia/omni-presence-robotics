@@ -5,7 +5,7 @@ import asyncio
 import threading
 import json
 
-from infrared import Infrared 
+from infrared import Infrared
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
@@ -14,15 +14,11 @@ from cat_toy_servo import control_cat_toy
 from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 
-# Initialize Infrared sensor
 infrared = Infrared()
 
-# -----------------------------------------------------------------------------
-# TCP Server Wrapper for Commands and Video
-# -----------------------------------------------------------------------------
 class Server:
     def __init__(self):
-        self.ip_address = self.get_interface_ip()
+        selfgit.ip_address = self.get_interface_ip()
         self.command_server = TCPServer()
         self.video_server = TCPServer()
         self.command_server_is_busy = False
@@ -39,23 +35,22 @@ class Server:
                 )[20:24]
             )
             return ip
-        except Exception as e:
-            print(f"[ERROR] Could not get IP address: {e}")
+        except Exception:
             return "127.0.0.1"
 
     def start_tcp_servers(self, command_port=5000, video_port=8000, max_clients=1, listen_count=1):
         try:
             self.command_server.start(self.ip_address, command_port, max_clients, listen_count)
             self.video_server.start(self.ip_address, video_port, max_clients, listen_count)
-        except Exception as e:
-            print(f"[ERROR] Starting TCP servers: {e}")
+        except Exception:
+            pass
 
     def stop_tcp_servers(self):
         try:
             self.command_server.close()
             self.video_server.close()
-        except Exception as e:
-            print(f"[ERROR] Stopping TCP servers: {e}")
+        except Exception:
+            pass
 
     def send_data_to_command_client(self, data: bytes, ip_address: str = None):
         self.command_server_is_busy = True
@@ -64,8 +59,8 @@ class Server:
                 self.command_server.send_to_client(ip_address, data)
             else:
                 self.command_server.send_to_all_client(data)
-        except Exception as e:
-            print(f"[ERROR] Sending to command client: {e}")
+        except Exception:
+            pass
         finally:
             self.command_server_is_busy = False
 
@@ -85,15 +80,10 @@ class Server:
     def read_data_from_video_server(self):
         return self.video_server.message_queue
 
-# -----------------------------------------------------------------------------
-# Main Server Loop: Process Incoming Commands
-# -----------------------------------------------------------------------------
 if __name__ == '__main__':
-    print("[SERVER] Starting...")
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
-    # Start the command WebSocket server on port 8001
     ws_thread = threading.Thread(
         target=lambda: asyncio.run(websocket_server.start_ws_server(server.read_data_from_command_server())),
         daemon=True
@@ -105,7 +95,6 @@ if __name__ == '__main__':
             cmd_queue = server.read_data_from_command_server()
             if cmd_queue.qsize() > 0:
                 client_address, message = cmd_queue.get()
-                print(f"[INCOMING] {client_address}: {message}")
                 if client_address == "websocket_ui":
                     try:
                         data = json.loads(message)
@@ -118,7 +107,6 @@ if __name__ == '__main__':
                             bl = payload.get("backLeft", 0)
                             br = payload.get("backRight", 0)
                             if (fl > 0 or fr > 0 or bl > 0 or br > 0) and infrared.read_all_infrared() != 0:
-                                print("[INFRARED] Obstacle detected. Blocking forward movement.")
                                 fl = fr = bl = br = 0
                             drive_mecanum_joystick(fl, fr, bl, br)
 
@@ -135,22 +123,17 @@ if __name__ == '__main__':
                         elif msg_type == "cat-toy":
                             control_cat_toy(payload.get("direction", "stop"), payload.get("speed", 1))
 
-                        else:
-                            print(f"[WARN] Unhandled message type: {msg_type}")
-
                     except json.JSONDecodeError:
-                        print("[ERROR] Invalid JSON from WebSocket:", message)
-                    except Exception as e:
-                        print(f"[ERROR] Failed to handle input: {e}")
+                        pass
+                    except Exception:
+                        pass
                 else:
                     server.send_data_to_command_client(message, client_address)
 
             video_queue = server.read_data_from_video_server()
             if video_queue.qsize() > 0:
                 client_address, message = video_queue.get()
-                print(f"[VIDEO] {client_address}: {message}")
                 server.send_data_to_video_client(message, client_address)
 
     except KeyboardInterrupt:
-        print("[SHUTDOWN] Stopping server...")
         server.stop_tcp_servers()
