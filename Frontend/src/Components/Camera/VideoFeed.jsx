@@ -11,7 +11,7 @@ const VideoFeed = () => {
   // Reference to a reconnect interval timer
   const reconnectRef = useRef(null);
   // State for the active camera selection ("CSI" or "USB")
-  const [activeCamera, setActiveCamera] = useState('CSI');
+  const [activeCamera, setActiveCamera] = useState('USB');
 
   // Decide the WebSocket URL based on the active camera.
   // For example, use port 8765 for the CSI camera and 8770 for the USB camera.

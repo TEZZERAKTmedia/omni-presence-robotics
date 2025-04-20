@@ -1,26 +1,22 @@
-import ffmpeg
-import numpy as np
+import cv2
 
 class USBCamera:
-    def __init__(self, device="/dev/video0", width=640, height=480):
-        self.device = device
+    def __init__(self, device_index=0, width=640, height=480):
+        self.cap = cv2.VideoCapture(device_index)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.width = width
         self.height = height
-        self.process = (
-            ffmpeg
-            .input(device, format='v4l2', framerate=30, video_size='640x480')
-            .output('pipe:', format='rawvideo', pix_fmt='rgb24')
-            .run_async(pipe_stdout=True)
-        )
-        print(f"[✅ USB CAMERA] Capturing from {device}")
 
-    def capture_frame(self) -> bytes:
-        frame_size = self.width * self.height * 3  # RGB
-        in_bytes = self.process.stdout.read(frame_size)
-        if len(in_bytes) != frame_size:
-            return b''
-        return in_bytes  # Can convert to image if needed
+        if not self.cap.isOpened():
+            raise RuntimeError(f"[❌ USB CAMERA] Could not open camera index {device_index}")
+        print(f"[✅ USB CAMERA] Opened /dev/video{device_index}")
+
+    def capture_frame(self):
+        ret, frame = self.cap.read()
+        if not ret:
+            return None
+        return frame  # This is already a NumPy BGR image
 
     def release(self):
-        self.process.stdout.close()
-        self.process.wait()
+        self.cap.release()
