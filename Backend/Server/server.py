@@ -18,7 +18,7 @@ infrared = Infrared()
 
 class Server:
     def __init__(self):
-        selfgit.ip_address = self.get_interface_ip()
+        self.ip_address = self.get_interface_ip()
         self.command_server = TCPServer()
         self.video_server = TCPServer()
         self.command_server_is_busy = False
