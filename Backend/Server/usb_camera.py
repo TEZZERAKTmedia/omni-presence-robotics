@@ -8,7 +8,7 @@ class USBCamera:
         self.height = height
         self.process = (
             ffmpeg
-            .input(device, format='v4l2', framerate=30, video_size=f'{width}x{height}')
+            .input(device, format='v4l2', framerate=30, video_size='640x480')
             .output('pipe:', format='rawvideo', pix_fmt='rgb24')
             .run_async(pipe_stdout=True)
         )
