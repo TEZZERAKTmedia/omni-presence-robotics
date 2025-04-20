@@ -25,9 +25,8 @@ const VideoFeed = () => {
 
       socket.onmessage = (event) => {
         if (event.data && event.data.length > 100) {
-          const frameUrl = `data:image/jpeg;base64,${event.data}`;
           if (imageRef.current) {
-            imageRef.current.src = frameUrl;
+            imageRef.current.src = `data:image/jpeg;base64,${event.data}`;
           }
         }
       };
@@ -37,7 +36,7 @@ const VideoFeed = () => {
       };
 
       socket.onclose = () => {
-        console.warn('[WebSocket] Video stream disconnected, attempting to reconnect...');
+        console.warn('[WebSocket] Disconnected, reconnecting...');
         reconnectRef.current = setInterval(() => {
           if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
             connectSocket();
@@ -50,9 +49,7 @@ const VideoFeed = () => {
 
     return () => {
       clearInterval(reconnectRef.current);
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+      if (socketRef.current) socketRef.current.close();
     };
   }, [wsUrl, activeCamera]);
 
@@ -64,21 +61,15 @@ const VideoFeed = () => {
     }
   };
 
-  const handleCameraChange = (event) => {
+  const handleCameraChange = (e) => {
     if (imageRef.current) {
-      imageRef.current.src = ''; // Clear old frame
+      imageRef.current.src = '';
     }
-    setActiveCamera(event.target.value);
+    setActiveCamera(e.target.value);
   };
 
   return (
-    <div
-      className="video-feed"
-      ref={containerRef}
-      onClick={toggleFullscreen}
-      title="Click to toggle fullscreen"
-    >
-      {/* Camera toggle UI */}
+    <div className="video-feed" ref={containerRef} onClick={toggleFullscreen}>
       <div className="camera-toggle">
         <label htmlFor="cameraSelect">Camera: </label>
         <select id="cameraSelect" value={activeCamera} onChange={handleCameraChange}>
@@ -86,11 +77,15 @@ const VideoFeed = () => {
           <option value="USB">USB Camera</option>
         </select>
       </div>
-
       <img
         ref={imageRef}
         alt="Live Feed"
-        style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+        style={{
+          width: '100%',
+          height: 'auto',
+          maxHeight: '80vh',
+          border: '2px solid #00f',
+        }}
       />
     </div>
   );
