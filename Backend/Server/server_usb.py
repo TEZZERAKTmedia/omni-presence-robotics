@@ -1,5 +1,9 @@
 import asyncio
 import websockets
+import numpy as np
+import cv2
+import base64
+
 from usb_camera import USBCamera
 from camera_streamer import CameraStreamer
 
@@ -12,14 +16,21 @@ streamer.start()
 async def usb_stream_handler(websocket, path=None):
     try:
         while True:
-            frame = streamer.get_frame()
-            if frame:
-                await websocket.send(frame)
-            await asyncio.sleep(0.05)  # 20 fps cap
+            frame_bytes = streamer.get_frame()
+            if frame_bytes:
+                # Convert raw RGB bytes to an image array
+                frame = np.frombuffer(frame_bytes, dtype=np.uint8).reshape((usb_camera.height, usb_camera.width, 3))
+                # Convert to JPEG
+                success, jpeg = cv2.imencode('.jpg', frame)
+                if success:
+                    # Encode as base64 and send to frontend
+                    b64_jpeg = base64.b64encode(jpeg).decode('utf-8')
+                    await websocket.send(b64_jpeg)
+            await asyncio.sleep(0.05)
     except websockets.exceptions.ConnectionClosed:
-        pass  # Silent disconnect
-    except Exception:
-        pass  # Silent error
+        pass  # Client disconnected
+    except Exception as e:
+        print(f"[ERROR USB STREAM] {e}")
 
 # Start the WebSocket server on port 8770
 async def main():
@@ -27,4 +38,7 @@ async def main():
         await asyncio.Future()  # Keep server alive
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("[SHUTDOWN] USB camera server stopped.")
