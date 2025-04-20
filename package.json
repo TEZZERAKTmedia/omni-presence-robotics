@@ -9,7 +9,7 @@
       
       "backend-usb": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server_usb.py'",
   
-      "start": "concurrently \"npm run frontend\" \"npm run backend-main\" \"npm run backend-csi\" \"npm run backend-usb\""
+      "start": "concurrently \"npm run frontend\" \"npm run backend-main\"  \"npm run backend-usb\""
     },
     "devDependencies": {
       "concurrently": "^8.0.1"
