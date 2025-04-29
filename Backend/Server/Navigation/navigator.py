@@ -1,7 +1,7 @@
 # navigator.py
 import asyncio
 import math
-from car import Car
+from ..car import Car
 from utils import distance, angle_between_points
 
 class Navigator:
