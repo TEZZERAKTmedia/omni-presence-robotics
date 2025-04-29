@@ -1,141 +1,89 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import './EnvironmentManager.css';
 
-export default function FloorPlanEditor() {
-  const [imageSrc, setImageSrc] = useState(null);
-  const [binaryGrid, setBinaryGrid] = useState(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-
-  const imageCanvasRef = useRef(null);
-  const boundaryCanvasRef = useRef(null);
-  const containerRef = useRef(null);
-
-  // 1. Upload image
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      console.log("✅ Image loaded into memory.");
-      setImageSrc(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // 2. Draw image and compute grid
-  const drawImageToCanvas = () => {
-    const canvas = imageCanvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-
-    img.onload = () => {
-      const scale = Math.min(
-        containerRef.current.clientWidth / img.width,
-        containerRef.current.clientHeight / img.height
-      );
-
-      const width = Math.floor(img.width * scale);
-      const height = Math.floor(img.height * scale);
-      canvas.width = width;
-      canvas.height = height;
-      setCanvasSize({ width, height });
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      console.log(`🖼️ Image drawn at ${width}x${height}`);
-      computeBinaryGrid(ctx, width, height);
-    };
-
-    img.src = imageSrc;
-  };
+const EnvironmentManager = () => {
+  const [environments, setEnvironments] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [selectedEnv, setSelectedEnv] = useState(null);
 
   useEffect(() => {
-    if (imageSrc) drawImageToCanvas();
-  }, [imageSrc]);
+    fetch('/api/environments')
+      .then(res => res.json())
+      .then(setEnvironments)
+      .catch(err => console.error("Failed to load environments:", err));
+  }, []);
 
-  // 3. Binary map from pixels
-  const computeBinaryGrid = (ctx, width, height) => {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const pixels = imageData.data;
-    const grid = [];
-    let darkCount = 0;
-
-    for (let y = 0; y < height; y++) {
-      const row = [];
-      for (let x = 0; x < width; x++) {
-        const i = (y * width + x) * 4;
-        const [r, g, b] = [pixels[i], pixels[i + 1], pixels[i + 2]];
-        const brightness = (r + g + b) / 3;
-        const isWall = brightness < 220; // More lenient threshold
-        row.push(isWall ? 1 : 0);
-        if (isWall) darkCount++;
-      }
-      grid.push(row);
-    }
-
-    setBinaryGrid(grid);
-    console.log(`📊 Binary grid: ${height} rows x ${grid[0].length} cols`);
-    console.log(`🧱 Wall pixels: ${darkCount}`);
+  const startNewEnvironment = async () => {
+    if (!newName) return;
+    const res = await fetch('/api/environments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName }),
+    });
+    const updated = await res.json();
+    setEnvironments(updated);
+    setNewName('');
   };
 
-  // 4. Draw only the edge of black areas
-  const drawBoundaryMap = () => {
-    if (!binaryGrid) return;
+  const deleteEnvironment = async (name) => {
+    if (!window.confirm(`Delete "${name}"?`)) return;
+    const res = await fetch(`/api/environments/${name}`, { method: 'DELETE' });
+    const updated = await res.json();
+    setEnvironments(updated);
+    if (selectedEnv === name) setSelectedEnv(null);
+  };
 
-    const { width, height } = canvasSize;
-    const canvas = boundaryCanvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = width;
-    canvas.height = height;
-    ctx.clearRect(0, 0, width, height);
-
-    let edgeCount = 0;
-    ctx.fillStyle = "#00f5d4"; // Cyan/green for contrast
-
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        if (binaryGrid[y][x] === 1) {
-          const top = binaryGrid[y - 1][x];
-          const bottom = binaryGrid[y + 1][x];
-          const left = binaryGrid[y][x - 1];
-          const right = binaryGrid[y][x + 1];
-          if ([top, bottom, left, right].some((v) => v === 0)) {
-            ctx.fillRect(x, y, 1, 1);
-            edgeCount++;
-          }
-        }
-      }
-    }
-
-    console.log(`🧭 Drawn ${edgeCount} edge pixels on boundary canvas`);
+  const renameEnvironment = async (oldName, newName) => {
+    const res = await fetch(`/api/environments/${oldName}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName }),
+    });
+    const updated = await res.json();
+    setEnvironments(updated);
   };
 
   return (
-    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center p-4">
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        className="mb-4"
-      />
+    <div className="env-manager">
+      <h2>🌍 Environment Manager</h2>
 
-      {imageSrc && (
-        <button
-          onClick={drawBoundaryMap}
-          className="mb-6 px-4 py-2 bg-green-700 rounded"
-        >
-          Generate Vector Map
-        </button>
+      <div className="env-create">
+        <input
+          type="text"
+          placeholder="New environment name"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+        <button onClick={startNewEnvironment}>Start Mapping</button>
+      </div>
+
+      <ul className="env-list">
+        {environments.map((env) => (
+          <li key={env}>
+            <span onClick={() => setSelectedEnv(env)}>{env}</span>
+            <button onClick={() => deleteEnvironment(env)}>🗑</button>
+            <button
+              onClick={() => {
+                const newName = prompt("Rename environment", env);
+                if (newName) renameEnvironment(env, newName);
+              }}
+            >
+              ✏️
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {selectedEnv && (
+        <div className="env-preview">
+          <h3>📡 Selected: {selectedEnv}</h3>
+          <button onClick={() => console.log("Load and render map:", selectedEnv)}>
+            Render Map
+          </button>
+        </div>
       )}
-
-      <div ref={containerRef} className="w-full max-w-4xl h-[300px] border mb-4">
-        <canvas ref={imageCanvasRef} className="w-full h-full" />
-      </div>
-
-      <h2 className="text-xl font-bold mb-2">🧭 Boundary Vector Map</h2>
-      <div className="border bg-neutral-900 p-2">
-        <canvas ref={boundaryCanvasRef} />
-      </div>
     </div>
   );
-}
+};
+
+export default EnvironmentManager;

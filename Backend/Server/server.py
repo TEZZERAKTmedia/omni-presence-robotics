@@ -4,6 +4,8 @@ import struct
 import asyncio
 import threading
 import json
+import os
+from flask import Flask, jsonify
 
 from infrared import Infrared
 from tcp_server import TCPServer
@@ -89,6 +91,16 @@ if __name__ == '__main__':
         daemon=True
     )
     ws_thread.start()
+    app = Flask(__name__)
+    @app.route("/api/environments", methods=["GET"])
+    def get_environments():
+        env_dir = "External/ORB_SLAM3/environments"
+        if not os.path.exists(env_dir):
+            return jsonify([])
+
+        envs = sorted(os.listdir(env_dir))
+        return jsonify(envs)
+    
 
     try:
         while True:

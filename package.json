@@ -8,8 +8,10 @@
       "backend-main": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server.py'",
       
       "backend-usb": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server_usb.py'",
+
+      "automation-cycle": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/automation_server.py'",
   
-      "start": "concurrently \"npm run frontend\" \"npm run backend-main\"  \"npm run backend-usb\""
+      "start": "concurrently \"npm run frontend\" \"npm run backend-main\"  \"npm run backend-usb\" \"npm run automation-cycle\""
     },
     "devDependencies": {
       "concurrently": "^8.0.1"
