@@ -1,23 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './video.css';
 
-const cameraInfo = {
-  CSI: "CSI Camera: Uses the Pi’s native camera interface (e.g. the official PiCam). Lower latency, high integration with libcamera but blocks /dev/video0 from USB webcams.",
-  USB: "USB Camera: Uses any UVC-compatible USB webcam. Easy plug‑and‑play, works with OpenCV VideoCapture, but slightly higher latency compared to CSI.",
-};
-
 const VideoFeed = () => {
   const containerRef = useRef(null);
   const socketRef = useRef(null);
   const reconnectRef = useRef(null);
   const imageRef = useRef(null);
+  const canvasRef = useRef(null); // new hidden canvas
 
-  const [activeCamera, setActiveCamera] = useState('USB');
-  const [showInfoFor, setShowInfoFor] = useState(null);
-
-  const wsUrl = activeCamera === 'CSI'
-    ? 'ws://localhost:8765'
-    : 'ws://localhost:8770';
+  const [activeSide, setActiveSide] = useState('left'); // left or right
+  const wsUrl = 'ws://localhost:8770'; // Only USB camera now
 
   useEffect(() => {
     const connectSocket = () => {
@@ -27,7 +19,22 @@ const VideoFeed = () => {
       socket.onopen = () => clearInterval(reconnectRef.current);
       socket.onmessage = (event) => {
         if (event.data && event.data.length > 100 && imageRef.current) {
-          imageRef.current.src = `data:image/jpeg;base64,${event.data}`;
+          const img = new Image();
+          img.onload = () => {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width / 2;
+            canvas.height = img.height;
+
+            if (activeSide === 'left') {
+              ctx.drawImage(img, 0, 0, img.width / 2, img.height, 0, 0, canvas.width, canvas.height);
+            } else if (activeSide === 'right') {
+              ctx.drawImage(img, img.width / 2, 0, img.width / 2, img.height, 0, 0, canvas.width, canvas.height);
+            }
+
+            imageRef.current.src = canvas.toDataURL('image/jpeg');
+          };
+          img.src = `data:image/jpeg;base64,${event.data}`;
         }
       };
       socket.onerror = (e) => console.error('[WebSocket] Error:', e);
@@ -45,7 +52,7 @@ const VideoFeed = () => {
       clearInterval(reconnectRef.current);
       socketRef.current?.close();
     };
-  }, [wsUrl]);
+  }, [wsUrl, activeSide]); // IMPORTANT: re-render when activeSide changes
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
@@ -55,28 +62,24 @@ const VideoFeed = () => {
     }
   };
 
-  const handleCameraChange = (camera) => {
-    imageRef.current && (imageRef.current.src = '');
-    setActiveCamera(camera);
-    setShowInfoFor(null);
-  };
-
   return (
     <div className="video-feed" ref={containerRef}>
       <div className="camera-toggle-buttons">
-        {['CSI','USB'].map(cam => (
+        {['left', 'right'].map(side => (
           <button
-            key={cam}
-            className={activeCamera === cam ? 'active' : ''}
-            onClick={() => handleCameraChange(cam)}
+            key={side}
+            className={activeSide === side ? 'active' : ''}
+            onClick={() => setActiveSide(side)}
           >
-            {cam} Camera
+            {side.charAt(0).toUpperCase() + side.slice(1)} Eye
           </button>
         ))}
       </div>
 
-     
+      {/* Hidden canvas */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
 
+      {/* Visible cropped image */}
       <img
         ref={imageRef}
         alt="Live Feed"
