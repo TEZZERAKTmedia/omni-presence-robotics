@@ -9,7 +9,8 @@
       
       "backend-usb": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server_usb.py'",
 
-      "automation-cycle": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/Navigation/autonomy_server.py'",
+      "automation-cycle": "bash -c 'source Backend/venv/bin/activate && python3 -m Server.Navigation.autonomy_server'",
+
   
       "start": "concurrently \"npm run frontend\" \"npm run backend-main\"  \"npm run backend-usb\" \"npm run automation-cycle\""
     },
