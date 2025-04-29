@@ -1,0 +1,123 @@
+.env-manager {
+    max-width: 700px;
+    margin: 2rem auto;
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 2rem;
+    color: #f1f1f1;
+    font-family: 'Segoe UI', sans-serif;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+  }
+  
+  .env-manager h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    color: #00ffe0;
+  }
+  
+  .env-create {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+  
+  .env-create input {
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #121212;
+    color: #eee;
+    width: 60%;
+    transition: border 0.3s;
+  }
+  
+  .env-create input:focus {
+    border: 1px solid #00ffe0;
+    outline: none;
+  }
+  
+  .env-create button {
+    background: #00ffe0;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    color: #121212;
+    font-weight: bold;
+    transition: background 0.3s ease;
+  }
+  
+  .env-create button:hover {
+    background: #00bfa0;
+  }
+  
+  .env-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .env-list li {
+    background: #2b2b2b;
+    margin-bottom: 0.75rem;
+    padding: 0.8rem;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  
+  .env-list li:hover {
+    background: #3a3a3a;
+  }
+  
+  .env-list li span {
+    flex-grow: 1;
+    cursor: pointer;
+  }
+  
+  .env-list button {
+    margin-left: 0.5rem;
+    background: #444;
+    color: #ddd;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .env-list button:hover {
+    background: #00ffe0;
+    color: #000;
+  }
+  
+  .env-preview {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 1px solid #444;
+  }
+  
+  .env-preview h3 {
+    color: #00ffe0;
+  }
+  
+  .env-preview button {
+    margin-top: 0.5rem;
+    background: #00ffe0;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+  }
+  
+  .env-preview button:hover {
+    background: #00bfa0;
+  }
+  

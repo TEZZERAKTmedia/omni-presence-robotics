@@ -1,0 +1,15 @@
+/* -------------- overlay defaults --------------- */
+.rotate-warning{
+    position:fixed; inset:0;
+    display:none;                          /* hidden by default  */
+    place-content:center;
+    background:#000c; color:#fff;
+    font:1.25rem/1.4 system-ui,sans-serif;
+    z-index:9999;
+  }
+  
+  /* -------------- must come AFTER the block above */
+  @media screen and (orientation:portrait){
+    .rotate-warning{display:grid !important;}   /* force-show in portrait   */
+  }
+  

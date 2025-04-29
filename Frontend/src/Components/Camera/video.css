@@ -19,3 +19,27 @@
     display: block;
   }
   
+  .camera-toggle-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  
+  .camera-toggle-buttons button {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    background-color: #eee;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .camera-toggle-buttons button.active,
+  .camera-toggle-buttons button:hover {
+    background-color: #007bff;
+    color: white;
+  }
+  

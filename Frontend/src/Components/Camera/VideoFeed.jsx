@@ -1,12 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './video.css';
 
+const cameraInfo = {
+  CSI: "CSI Camera: Uses the Pi’s native camera interface (e.g. the official PiCam). Lower latency, high integration with libcamera but blocks /dev/video0 from USB webcams.",
+  USB: "USB Camera: Uses any UVC-compatible USB webcam. Easy plug‑and‑play, works with OpenCV VideoCapture, but slightly higher latency compared to CSI.",
+};
+
 const VideoFeed = () => {
   const containerRef = useRef(null);
   const socketRef = useRef(null);
   const reconnectRef = useRef(null);
   const imageRef = useRef(null);
+
   const [activeCamera, setActiveCamera] = useState('USB');
+  const [showInfoFor, setShowInfoFor] = useState(null);
 
   const wsUrl = activeCamera === 'CSI'
     ? 'ws://localhost:8765'
@@ -14,29 +21,17 @@ const VideoFeed = () => {
 
   useEffect(() => {
     const connectSocket = () => {
-      console.log(`Connecting to video stream: ${wsUrl}`);
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
 
-      socket.onopen = () => {
-        console.log('[WebSocket] Connected to video stream');
-        clearInterval(reconnectRef.current);
-      };
-
+      socket.onopen = () => clearInterval(reconnectRef.current);
       socket.onmessage = (event) => {
-        if (event.data && event.data.length > 100) {
-          if (imageRef.current) {
-            imageRef.current.src = `data:image/jpeg;base64,${event.data}`;
-          }
+        if (event.data && event.data.length > 100 && imageRef.current) {
+          imageRef.current.src = `data:image/jpeg;base64,${event.data}`;
         }
       };
-
-      socket.onerror = (error) => {
-        console.error('[WebSocket] Video stream error:', error);
-      };
-
+      socket.onerror = (e) => console.error('[WebSocket] Error:', e);
       socket.onclose = () => {
-        console.warn('[WebSocket] Disconnected, reconnecting...');
         reconnectRef.current = setInterval(() => {
           if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
             connectSocket();
@@ -46,46 +41,48 @@ const VideoFeed = () => {
     };
 
     connectSocket();
-
     return () => {
       clearInterval(reconnectRef.current);
-      if (socketRef.current) socketRef.current.close();
+      socketRef.current?.close();
     };
-  }, [wsUrl, activeCamera]);
+  }, [wsUrl]);
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
-    } else if (containerRef.current) {
-      containerRef.current.requestFullscreen();
+    } else {
+      containerRef.current?.requestFullscreen();
     }
   };
 
-  const handleCameraChange = (e) => {
-    if (imageRef.current) {
-      imageRef.current.src = '';
-    }
-    setActiveCamera(e.target.value);
+  const handleCameraChange = (camera) => {
+    imageRef.current && (imageRef.current.src = '');
+    setActiveCamera(camera);
+    setShowInfoFor(null);
   };
 
   return (
-    <div className="video-feed" ref={containerRef} onClick={toggleFullscreen}>
-      <div className="camera-toggle">
-        <label htmlFor="cameraSelect">Camera: </label>
-        <select id="cameraSelect" value={activeCamera} onChange={handleCameraChange}>
-          <option value="CSI">CSI Camera</option>
-          <option value="USB">USB Camera</option>
-        </select>
+    <div className="video-feed" ref={containerRef}>
+      <div className="camera-toggle-buttons">
+        {['CSI','USB'].map(cam => (
+          <button
+            key={cam}
+            className={activeCamera === cam ? 'active' : ''}
+            onClick={() => handleCameraChange(cam)}
+          >
+            {cam} Camera
+          </button>
+        ))}
       </div>
+
+     
+
       <img
         ref={imageRef}
         alt="Live Feed"
-        style={{
-          width: '100%',
-          height: 'auto',
-          maxHeight: '80vh',
-          border: '2px solid #00f',
-        }}
+        onClick={toggleFullscreen}
+        className="video-frame"
+        title="Click to toggle fullscreen"
       />
     </div>
   );

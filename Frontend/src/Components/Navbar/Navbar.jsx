@@ -24,8 +24,9 @@ export default function Navbar() {
             <Link to="/" onClick={handleLinkClick}>Home</Link>
           </li>
           <li className={location.pathname === '/editor' ? 'active' : ''}>
-            <Link to="/editor" onClick={handleLinkClick}>Floor Mapping</Link>
+            <Link to="/Mapping" onClick={handleLinkClick}>Environment Mapping</Link>
           </li>
+
         </ul>
       </nav>
     </>

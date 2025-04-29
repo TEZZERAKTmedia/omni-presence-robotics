@@ -5,9 +5,12 @@ import VideoFeed from '../Components/Camera/VideoFeed';
 import CatToyController from '../Components/Joystick/CatToyController';
 import '../App.css'; // Adjust the path as necessary
 
+
 export default function Home() {
   return (
+    
     <div className="robot-ui">
+         
       
       <JoystickToggle />
       <div className="center-column">
@@ -16,5 +19,6 @@ export default function Home() {
       </div>
       <CameraJoystick />
     </div>
+    
   );
 }

@@ -1,0 +1,5 @@
+all:
+	gcc -o system_monitor system_monitor.c
+
+clean:
+	rm -f system_monitor

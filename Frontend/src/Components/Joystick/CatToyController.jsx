@@ -25,6 +25,7 @@ export default function ServoToyController() {
   return (
     <div className="servo-toy-controller">
       <div className="speed-selector">
+        <h4>Cat Toy</h4>
         <label>Speed:</label>
         <select value={speed} onChange={(e) => setSpeed(parseInt(e.target.value, 10))}>
           {speeds.map((s) => (
@@ -33,24 +34,26 @@ export default function ServoToyController() {
         </select>
       </div>
       <div className="triangle-wrapper">
-        <button
-          className={`triangle-button left ${activeDirection === 'left' ? 'active' : ''}`}
-          onMouseDown={handleMouseDown('left')}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          Left
-        </button>
+      <button
+        className={`triangle-button left ${activeDirection === 'left' ? 'active' : ''}`}
+        onMouseDown={handleMouseDown('left')}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <span className="triangle-label">L</span>
+      </button>
+
       </div>
       <div className="triangle-wrapper">
-        <button
-          className={`triangle-button right ${activeDirection === 'right' ? 'active' : ''}`}
-          onMouseDown={handleMouseDown('right')}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          Right
-        </button>
+      <button
+        className={`triangle-button right ${activeDirection === 'right' ? 'active' : ''}`}
+        onMouseDown={handleMouseDown('right')}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <span className="triangle-label">R</span>
+      </button>
+
       </div>
     </div>
   );
