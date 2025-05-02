@@ -7,7 +7,7 @@ import json
 import os
 from flask import Flask, jsonify
 
-from infrared import Infrared
+
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
@@ -16,7 +16,7 @@ from cat_toy_servo import control_cat_toy
 from joystick_motor_controller import check_idle_and_stop
 from camera_servo_controller import control_camera_servo
 
-infrared = Infrared()
+
 
 class Server:
     def __init__(self):
@@ -118,8 +118,15 @@ if __name__ == '__main__':
                             fr = payload.get("frontRight", 0)
                             bl = payload.get("backLeft", 0)
                             br = payload.get("backRight", 0)
-                            if (fl > 0 or fr > 0 or bl > 0 or br > 0) and infrared.read_all_infrared() != 0:
-                                fl = fr = bl = br = 0
+                            if fl > 0 or fr > 0 or bl > 0 or br > 0:
+                                try:
+                                    from infrared import Infrared
+                                    ir = Infrared()
+                                    if ir.read_all_infrared() != 0:
+                                        fl = fr = bl = br = 0
+                                except Exception as e:
+                                    print(f"[Infrared Warning] Could not read sensors: {e}")
+
                             drive_mecanum_joystick(fl, fr, bl, br)
 
                         elif msg_type == "terrain":
