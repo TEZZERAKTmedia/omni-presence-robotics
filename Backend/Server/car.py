@@ -7,29 +7,27 @@ import time
 import math
 
 class Car:
-    def __init__(self):
+    def __init__(self, enable_adc=True, enable_infrared=True):
         self.servo = None
         self.sonic = None
         self.motor = None
         self.infrared = None
         self.adc = None
         self.car_record_time = time.time()
-        self.car_sonic_servo_angle = 30
-        self.car_sonic_servo_dir = 1
-        self.car_sonic_distance = [30, 30, 30]
-        self.time_compensate = 3 #Depend on your own car,If you want to get the best out of the rotation mode, change the value by experimenting.
+        self.time_compensate = 3
+        self.enable_adc = enable_adc
+        self.enable_infrared = enable_infrared
         self.start()
-    def start(self):  
+
+    def start(self):
         if self.servo is None:
             self.servo = Servo()
-        if self.sonic is None:
-            self.sonic = Ultrasonic()
         if self.motor is None:
             self.motor = Ordinary_Car()
-        if self.infrared is None:
+        if self.enable_infrared and self.infrared is None:
             self.infrared = Infrared()
-        if self.adc is None:
-            self.adc = ADC() 
+        if self.enable_adc and self.adc is None:
+            self.adc = ADC()
 
     def close(self):
         self.motor.set_motor_model(0,0,0,0)

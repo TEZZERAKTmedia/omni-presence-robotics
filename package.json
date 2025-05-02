@@ -9,7 +9,7 @@
       
       "backend-usb": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/server_usb.py'",
 
-     "backend-autonomy": "bash -c 'source Backend/venv/bin/activate && python3 Backend/Server/Navigation/autonomy_server.py'",
+      "backend-autonomy": "bash -c 'source Backend/venv/bin/activate && AUTO_MODE=1 python3 Backend/Server/Navigation/autonomy_server.py'",
 
 
 

@@ -99,12 +99,23 @@ class ParameterManager:
             print(f"Parameter file {self.PARAM_FILE} does not exist or contains invalid parameters.")
             user_input_required = True
         else:
-            user_choice = input("Do you want to re-enter the parameters? (yes/no): ").strip().lower()
-            user_input_required = user_choice == 'yes'
+            # Check if AUTO_MODE is set; skip input if so
+            if os.environ.get("AUTO_MODE") == "1":
+                user_input_required = False
+                print("[AUTO_MODE] Skipping manual parameter re-entry.")
+            else:
+                user_choice = input("Do you want to re-enter the parameters? (yes/no): ").strip().lower()
+                user_input_required = user_choice == 'yes'
 
         if user_input_required:
-            connect_version = self.get_valid_input("Enter Connect Version (1 or 2): ", [1, 2])
-            pcb_version = self.get_valid_input("Enter PCB Version (1 or 2): ", [1, 2])
+            if os.environ.get("AUTO_MODE") == "1":
+                print("[AUTO_MODE] Creating parameter file with defaults.")
+                connect_version = int(os.environ.get("CONNECT_VERSION", 1))
+                pcb_version = int(os.environ.get("PCB_VERSION", 1))
+            else:
+                connect_version = self.get_valid_input("Enter Connect Version (1 or 2): ", [1, 2])
+                pcb_version = self.get_valid_input("Enter PCB Version (1 or 2): ", [1, 2])
+
             pi_version = self.get_raspberry_pi_version()
             self.create_param_file()
             self.set_param('Connect_Version', connect_version)
@@ -114,7 +125,19 @@ class ParameterManager:
             print("Do not modify the hardware version. Skipping...")
 
     def get_valid_input(self, prompt: str, valid_values: list) -> any:
-        """Get valid input from the user."""
+        """Get valid input from the user or use AUTO_MODE env value."""
+        auto_mode = os.environ.get("AUTO_MODE")
+        if auto_mode:
+            default_value = os.environ.get(prompt.replace(" ", "_").upper(), valid_values[0])
+            try:
+                value = int(default_value)
+                if value in valid_values:
+                    print(f"[AUTO_MODE] Using {prompt.strip()}: {value}")
+                    return value
+            except ValueError:
+                print(f"[AUTO_MODE] Invalid override value. Using default {valid_values[0]}")
+                return valid_values[0]
+
         while True:
             try:
                 value = int(input(prompt))
@@ -124,6 +147,7 @@ class ParameterManager:
                     print(f"Invalid input. Please enter one of {valid_values}.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
+
 
     def get_connect_version(self) -> int:
         """Get the Connect version from the parameter file."""
