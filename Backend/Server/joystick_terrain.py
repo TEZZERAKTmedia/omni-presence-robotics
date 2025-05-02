@@ -6,8 +6,8 @@ car = Ordinary_Car()
 
 # Constants
 DEAD_ZONE = 0.1
-MIN_THRESHOLD = 300
-MAX_PWM = 1600
+MAX_PWM = 2000  # or up to 2200, depending on servo controller limits
+MIN_THRESHOLD = 600  # increase torque minimum
 IDLE_TIMEOUT = 10
 
 # State
