@@ -1,10 +1,16 @@
 import json
+import asyncio
+import os
+import sys
 
-from Server.Navigation.slam_interface import SlamManager, PoseListener
-from Server.Navigation.control_server import ControlServer
-from Server.Navigation.cost_map_builder import build_cost_map
-from Server.Navigation.path_planner import a_star
-from Server.Navigation.navigator import Navigator
+# Allow sibling-style imports from parent folder (../car.py, ../adc.py, etc.)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from slam_interface import SlamManager, PoseListener
+from control_server import ControlServer
+from cost_map_builder import build_cost_map
+from path_planner import a_star
+from navigator import Navigator
 
 class AutonomyServer:
     def __init__(self):
@@ -46,7 +52,6 @@ class AutonomyServer:
                         await self.navigator.follow_path(path)
 
             await asyncio.sleep(0.5)  # Small delay to prevent spamming too fast
-
 
     async def stop(self):
         self.running = False

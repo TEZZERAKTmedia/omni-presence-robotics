@@ -3,5 +3,9 @@ Pillow
 PyQt5
 opencv-python-headless
 ffmpeg-python
+
+# YOLOv8
+ultralytics>=8.0.0
+
 gpiozero  # <-- optional, only works on Pi
 picamera2  # <-- optional, only works on Pi
