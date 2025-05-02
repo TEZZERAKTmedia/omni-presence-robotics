@@ -26,11 +26,26 @@ const VideoFeed = () => {
             canvas.width = img.width / 2;
             canvas.height = img.height;
 
+            ctx.save();
+            ctx.translate(canvas.width, canvas.height); // Move origin to bottom-right corner
+            ctx.scale(-1, -1); // Flip both horizontally and vertically (180°)
+
             if (activeSide === 'left') {
-              ctx.drawImage(img, 0, 0, img.width / 2, img.height, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(
+                img,
+                0, 0, img.width / 2, img.height, // Source rect
+                0, 0, canvas.width, canvas.height // Destination rect
+              );
             } else if (activeSide === 'right') {
-              ctx.drawImage(img, img.width / 2, 0, img.width / 2, img.height, 0, 0, canvas.width, canvas.height);
+              ctx.drawImage(
+                img,
+                img.width / 2, 0, img.width / 2, img.height, // Source rect
+                0, 0, canvas.width, canvas.height // Destination rect
+              );
             }
+
+            ctx.restore();
+// Restore to default orientation
 
             imageRef.current.src = canvas.toDataURL('image/jpeg');
           };
