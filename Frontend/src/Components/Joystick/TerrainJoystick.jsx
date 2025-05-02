@@ -50,8 +50,12 @@ export default function TerrainJoystickController() {
 
   
     const max = Math.max(1, Math.abs(left), Math.abs(right));
-    left /= max;
-    right /= max;
+    left = (left / max) * 1.5;   // 50% more output power
+    right = (right / max) * 1.5;
+
+    left = Math.max(-1, Math.min(1, left));   // Clamp to [-1, 1]
+    right = Math.max(-1, Math.min(1, right));
+
   
     setPosition({ x: clampedX, y: clampedY });
   
