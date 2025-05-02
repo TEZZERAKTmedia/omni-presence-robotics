@@ -35,10 +35,19 @@ export default function TerrainJoystickController() {
     const yInput = Math.abs(normY) < DEAD_ZONE ? 0 : +normY.toFixed(2);
   
     const forward = yInput;
-    const turn = forward === 0 ? xInput : xInput * 0.6;
-  
-    let left = forward - turn;
-    let right = forward + turn;
+    let left, right;
+
+    if (Math.abs(forward) < 0.05 && Math.abs(xInput) >= DEAD_ZONE) {
+      // In-place rotation: max torque
+      left = -xInput;
+      right = xInput;
+    } else {
+      // Standard curved driving
+      const turn = xInput * 0.6;
+      left = forward - turn;
+      right = forward + turn;
+    }
+
   
     const max = Math.max(1, Math.abs(left), Math.abs(right));
     left /= max;
