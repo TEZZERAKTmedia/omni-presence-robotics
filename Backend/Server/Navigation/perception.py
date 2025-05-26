@@ -11,3 +11,9 @@ def estimate_object_world_position(pose, bbox_center, depth, fov=60, img_width=6
     dy = depth * sin(angle_rad)
 
     return (x + dx, y + dy)
+
+# 👇 Add to perception.py
+def check_for_obstacle(pose):
+    # TODO: Replace with real logic later
+    return False  # assume no obstacle for now
+

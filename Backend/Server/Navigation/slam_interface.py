@@ -1,31 +1,48 @@
-# slam_interface.py
 import asyncio
 import websockets
 import json
-import subprocess
 import os
 import signal
+import subprocess
 
-class SlamManager:
-    def __init__(self):
-        self.proc = None
-        self.env_dir = "External/ORB_SLAM3/environments/default"
+# --- Path helpers ---
+def base_path(*parts):
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", *parts))
 
-    async def start_slam(self):
-        if not os.path.exists(self.env_dir):
-            os.makedirs(self.env_dir)
-        self.proc = subprocess.Popen(
-            ["python3", "slam_map_server.py", self.env_dir],
-            cwd="External/ORB_SLAM3",
-            preexec_fn=os.setsid
+def binary_exists():
+    bin_path = base_path("ORB_SLAM3", "Examples", "Stereo", "stereo_tum")
+    return os.path.isfile(bin_path)
+
+async def try_build_orbslam():
+    print("[SLAM] Checking for SLAM binary...")
+
+    if binary_exists():
+        print("[SLAM] SLAM binary found ✅")
+        return True
+
+    print("[SLAM] SLAM binary missing — attempting build... 🔧")
+
+    orbslam_dir = base_path("ORB_SLAM3")
+    try:
+        result = subprocess.run(
+            ["bash", "build.sh"],
+            cwd=orbslam_dir,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
         )
-        await asyncio.sleep(2)
+    except subprocess.CalledProcessError as e:
+        print("[SLAM ERROR] Build script failed:\n", e.stderr.decode())
+        return False
 
-    async def stop_slam(self):
-        if self.proc:
-            os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
-            await asyncio.sleep(1)
+    if binary_exists():
+        print("[SLAM] Build successful! 🎉")
+        return True
+    else:
+        print("[SLAM] Build failed — binary still missing ❌")
+        return False
 
+# --- PoseListener class ---
 class PoseListener:
     def __init__(self):
         self.uri = "ws://localhost:8780"
@@ -43,7 +60,11 @@ class PoseListener:
                 if "pose" in data:
                     if self.pose_queue.full():
                         _ = self.pose_queue.get_nowait()
-                    await self.pose_queue.put((data["pose"]["x"], data["pose"]["y"]))
+                    await self.pose_queue.put((
+                        data["pose"]["x"],
+                        data["pose"]["y"],
+                        data["pose"]["heading"]
+                    ))
                 if "landmarks" in data:
                     self.landmarks = data["landmarks"]
             except json.JSONDecodeError:
@@ -56,3 +77,44 @@ class PoseListener:
 
     async def disconnect(self):
         await self.conn.close()
+
+# --- Global pose listener instance ---
+pose_listener = PoseListener()
+
+async def get_current_pose():
+    return await pose_listener.get_pose()
+
+# --- SLAM Manager ---
+class SlamManager:
+    def __init__(self):
+        self.proc = None
+        self.orbslam_dir = base_path("ORB_SLAM3")
+        self.env_dir = os.path.join(self.orbslam_dir, "environments", "default")
+
+    async def start_slam(self):
+        if not os.path.exists(self.env_dir):
+            os.makedirs(self.env_dir)
+
+        self.proc = await asyncio.create_subprocess_exec(
+            "./Examples/Stereo/stereo_tum",
+            "Vocabulary/ORBvoc.txt",
+            "Examples/Stereo/TUM1_stereo.yaml",
+            "dataset/left",   # Replace with actual stereo input
+            "dataset/right",
+            cwd=self.orbslam_dir,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            preexec_fn=os.setsid
+        )
+        await asyncio.sleep(2)
+
+    async def stop_slam(self):
+        if self.proc:
+            os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
+            await asyncio.sleep(1)
+
+    def save_map(self, path):
+        print(f"[SLAM] (mock) Saving map to {path}...")
+
+    def load_map(self, path):
+        print(f"[SLAM] (mock) Loading map from {path}...")

@@ -1,0 +1,4 @@
+# Ignore Python venv
+Yolo/.venv/
+Yolo/runs/
+

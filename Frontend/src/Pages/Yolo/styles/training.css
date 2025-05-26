@@ -1,0 +1,35 @@
+.training-page {
+    max-width: 900px;
+    margin: auto;
+    padding: 2rem;
+    font-family: sans-serif;
+  }
+  
+  .upload-video,
+  .class-creator {
+    background: #494949;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border-radius: 6px;
+  }
+  
+  .upload-video input,
+  .class-creator input {
+    padding: 8px;
+    width: 200px;
+    margin-right: 10px;
+  }
+  
+  button {
+    padding: 6px 10px;
+    margin: 5px;
+    cursor: pointer;
+  }
+  
+  .suggestions button {
+    background: #eee;
+    border: none;
+    margin-right: 5px;
+  }
+  

@@ -1,62 +1,113 @@
-import json
+# autonomy_server.py
 import asyncio
+import json
 import os
 import sys
 
-# Allow sibling-style imports from parent folder (../car.py, ../adc.py, etc.)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from slam_interface import SlamManager, PoseListener
+from slam_interface import SlamManager, PoseListener, try_build_orbslam
 from control_server import ControlServer
-from cost_map_builder import build_cost_map
-from path_planner import a_star
 from navigator import Navigator
+from cost_map_builder import build_cost_map
+from frontier_finder import find_frontiers
+from path_planner import a_star
+
+
+def choose_best_frontier(frontiers, current_pose):
+    def dist(a, b):
+        return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+    return min(frontiers, key=lambda f: dist(current_pose, f))
+
 
 class AutonomyServer:
     def __init__(self):
+        self.map_file = "resume_map.env"
+        self.visited_file = "visited_resume.json"
+        self.visited = []
+
         self.slam_manager = SlamManager()
         self.pose_listener = PoseListener()
         self.control_server = ControlServer(self)
-        self.navigator = Navigator()
-        self.cost_map = None
-        self.current_goal = None
+        self.navigator = Navigator(visited_file=self.visited_file)
+
         self.running = False
 
     async def start(self):
+        # ✅ Try building ORB-SLAM before starting it
+        if not await try_build_orbslam():
+            print("[ERROR] SLAM binary could not be built.")
+            await self.control_server.broadcast(json.dumps({
+                "type": "slam_boot_error",
+                "message": "SLAM binary build failed. Check robot hardware or build.sh."
+            }))
+            return  # ⛔ Abort early if build failed
+
+        # ✅ Start SLAM
         await self.slam_manager.start_slam()
+
+        if os.path.exists(self.map_file):
+            self.slam_manager.load_map(self.map_file)
+            print(f"[SERVER] Loaded previous SLAM map from {self.map_file}")
+
         await self.pose_listener.connect()
         await self.control_server.start()
 
         self.running = True
-        await self.navigation_loop()
+        await self.run_exploration_mode()
+        await self.shutdown()
 
-    async def navigation_loop(self):
+    async def run_exploration_mode(self):
+        print("[EXPLORATION] Starting mapping process...")
+
+        async def _save_map_chunk():
+            self.slam_manager.save_map(self.map_file)
+            print(f"[SERVER] Autosaved SLAM map to {self.map_file}")
+            await self.control_server.broadcast(json.dumps({
+                "type": "autosave",
+                "map_file": self.map_file
+            }))
+
         while self.running:
-            # Always send live landmarks to all clients
-            landmarks_message = json.dumps({
-                "type": "landmarks_update",
-                "payload": {"landmarks": self.pose_listener.landmarks}
-            })
-            await self.control_server.broadcast(landmarks_message)
+            pose = await self.pose_listener.get_pose()
+            if pose:
+                self.visited.append(pose)
 
-            if self.control_server.autonomy_enabled and self.control_server.goal:
-                pose = await self.pose_listener.get_pose()
-                goal = self.control_server.goal
+                cost_map = build_cost_map(
+                    self.pose_listener.landmarks,
+                    visited=self.visited
+                )
 
-                if not self.cost_map:
-                    self.cost_map = build_cost_map(self.pose_listener.landmarks)
+                frontiers = find_frontiers(cost_map)
+                if not frontiers:
+                    print("[EXPLORATION] No frontiers left.")
+                    break
 
-                if pose and goal:
-                    path = a_star(self.cost_map, pose, goal)
-                    if path:
-                        await self.navigator.follow_path(path)
+                goal = choose_best_frontier(frontiers, pose)
+                path = a_star(cost_map, pose, goal)
 
-            await asyncio.sleep(0.5)  # Small delay to prevent spamming too fast
+                if path:
+                    print(f"[NAV] Navigating to frontier at {goal}")
+                    await self.navigator.follow_path(path)
+                    await asyncio.sleep(0.2)
+                    await _save_map_chunk()
+                else:
+                    print(f"[NAV] No path to frontier at {goal}, skipping...")
 
-    async def stop(self):
-        self.running = False
-        await self.slam_manager.stop_slam()
+        self.slam_manager.save_map(self.map_file)
+        print("[EXPLORATION] Final SLAM map saved.")
+        await self.control_server.broadcast(json.dumps({
+            "type": "exploration_complete",
+            "map_file": self.map_file
+        }))
+
+    async def shutdown(self):
+        print("[SERVER] Shutting down…")
+        await self.control_server.stop()
         await self.pose_listener.disconnect()
+        await self.slam_manager.stop_slam()
+        self.running = False
+
 
 if __name__ == "__main__":
     server = AutonomyServer()

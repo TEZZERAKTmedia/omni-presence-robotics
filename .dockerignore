@@ -1,0 +1,6 @@
+__pycache__/
+node_modules/
+Frontend/node_modules/
+*.log
+.env
+.git

@@ -1,0 +1,10 @@
+# Only serve the dist files
+FROM node:18-alpine
+
+RUN npm install -g serve
+
+WORKDIR /app
+COPY ./dist ./dist
+
+EXPOSE 5173
+CMD ["serve", "-s", "dist", "-l", "5173"]

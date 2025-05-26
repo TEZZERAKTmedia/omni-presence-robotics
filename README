@@ -1,0 +1,114 @@
+# 🐾 Omni Presence Robotic Cat Toy
+
+This project contains a full-stack robotics platform with a React-based frontend, Python-based backend, and hardware-driven autonomy powered by a Raspberry Pi.
+
+## 📁 Project Structure
+
+```
+Sawyer/
+├── Backend/            # Python backend for control, autonomy, and training
+├── Frontend/           # React + Vite frontend UI
+├── docker-compose.yml  # Orchestrates backend + frontend containers
+├── Dockerfile.backend  # Builds the Python backend container
+├── Frontend/
+│   ├── Dockerfile.frontend  # Lightweight container that serves built dist/
+│   └── build-frontend.sh     # Host-side build script
+```
+
+---
+
+## ✨ Setup Instructions
+
+We **do not** build the frontend within Docker to avoid cross-platform native module issues. Instead, we:
+
+1. Build the frontend locally using your host system (Mac/Linux/Windows).
+2. Use Docker **only to serve** the static `dist/` folder.
+
+### ⚙️ Prerequisites
+
+* [Node.js](https://nodejs.org/en/download) (v18+ recommended)
+* [Docker](https://www.docker.com/products/docker-desktop/)
+* [Docker Compose](https://docs.docker.com/compose/)
+
+---
+
+## 🛠️ Frontend Setup
+
+Run this from the project root:
+
+```bash
+# Step 1: Build frontend using host Node.js (generates ./Frontend/dist)
+./Frontend/build-frontend.sh
+```
+
+This script:
+
+* Installs dependencies (`npm install`)
+* Builds the production-ready frontend (`npm run build`)
+* Removes previous node\_modules & lockfile to ensure clean builds
+
+---
+
+## 🐳 Docker Setup
+
+Once the frontend is built:
+
+```bash
+# Step 2: Build frontend image and spin up containers
+docker-compose build --no-cache frontend
+docker-compose up
+```
+
+This will:
+
+* Use the `Dockerfile.frontend` to serve the static `dist/` folder via `serve`
+* Run your backend via `Dockerfile.backend`
+
+---
+
+## 🔥 Quick Preview
+
+Once running:
+
+* Frontend: [http://localhost:5173](http://localhost:5173)
+* Backend API: Accessible on ports 8000–8003
+
+---
+
+## 🧠 Why This Setup?
+
+* Avoids Docker-native module errors (like `@rollup/rollup-linux-*`)
+* Keeps images small and fast
+* Decouples frontend build from container runtime
+
+---
+
+## 🧼 Cleanup
+
+To reset everything:
+
+```bash
+rm -rf Frontend/node_modules Frontend/package-lock.json Frontend/dist
+docker-compose down --remove-orphans
+```
+
+Then rebuild:
+
+```bash
+./Frontend/build-frontend.sh
+docker-compose build --no-cache frontend
+docker-compose up
+```
+
+---
+
+## 📦 Notes
+
+* `serve` is used inside the frontend container to host the production build
+* You can modify `Dockerfile.frontend` to serve via NGINX or any other static server
+
+---
+
+## 🤖 Built by Trentyn Nicholas
+
+This project is part of a robotics platform that includes object detection, mapping, navigation, and remote control via WebSocket interfaces.

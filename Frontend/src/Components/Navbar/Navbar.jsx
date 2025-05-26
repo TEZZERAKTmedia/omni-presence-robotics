@@ -26,6 +26,10 @@ export default function Navbar() {
           <li className={location.pathname === '/editor' ? 'active' : ''}>
             <Link to="/Mapping" onClick={handleLinkClick}>Environment Mapping</Link>
           </li>
+          <li className={location.pathname === '/editor' ? 'active' : ''}>
+            <Link to="/training" onClick={handleLinkClick}>Training</Link>
+          </li>
+
 
         </ul>
       </nav>

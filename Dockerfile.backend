@@ -1,0 +1,27 @@
+# Use a lightweight Python base image
+FROM python:3.11-slim
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Copy dependency list and install them
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Copy all backend code and config
+COPY Backend/ ./Backend/
+COPY params.json .
+
+# Copy the startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Expose ports used by your WebSocket servers (adjust if needed)
+EXPOSE 8000
+EXPOSE 8001
+EXPOSE 8002
+EXPOSE 8003
+
+# Run all backend servers in parallel
+CMD ["/start.sh"]
+

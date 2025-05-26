@@ -1,6 +1,21 @@
 import asyncio
 import websockets
 import json
+from servo import Servo  # ✅ make sure this import path is correct
+
+# Initialize servo controller instance
+servo_controller = Servo()
+
+def set_servo_angle(channel: str, angle: int):
+    """
+    Allows external modules like navigator.py to control the servo.
+    """
+    try:
+        servo_controller.set_servo_pwm(channel, angle)
+        print(f"[CTRL] Set servo {channel} to angle {angle}")
+    except Exception as e:
+        print(f"[CTRL ERROR] Failed to set servo angle: {e}")
+
 
 class ControlServer:
     def __init__(self, autonomy_server):
