@@ -11,16 +11,17 @@ class CameraServoController:
         self.running = False
         self.pan_thread = None
         self.tilt_thread = None
-        self.pan_ref = [0]
-        self.tilt_ref = [0]
+        self.pan_ref = [1500]
+        self.tilt_ref = [1500]
         self.lock = threading.Lock()
 
         # Safe movement constraints
         self.min_pulse = 1300
         self.max_pulse = 1700
 
-        # Immediately stop both servos on init
-        self.stop_all()
+        # On boot, stop both servos
+        self.servo.pwm_servo.set_servo_pulse(self.pan_channel, 0)
+        self.servo.pwm_servo.set_servo_pulse(self.tilt_channel, 0)
 
     def _run_servo(self, channel, pulse_ref, label):
         while self.running:
@@ -55,24 +56,20 @@ class CameraServoController:
             self.pan_thread.start()
             self.tilt_thread.start()
 
-    def stop_all(self):
-        """Force stop servos"""
+    def stop(self):
         self.running = False
         if self.pan_thread:
             self.pan_thread.join()
         if self.tilt_thread:
             self.tilt_thread.join()
+
         self.servo.pwm_servo.set_servo_pulse(self.pan_channel, 0)
         self.servo.pwm_servo.set_servo_pulse(self.tilt_channel, 0)
         print("[CAMERA SERVO] Both servos stopped")
 
-# Global instance and external control hooks
+# Global instance and frontend hook
 camera_servo_controller = CameraServoController()
 
 def control_camera_servo(pan: float, tilt: float):
     print(f"[INPUT] pan={pan}, tilt={tilt}")
     camera_servo_controller.update_servo(pan, tilt)
-
-def init_camera_servo():
-    print("[INIT] Resetting camera servo to safe state")
-    camera_servo_controller.stop_all()
