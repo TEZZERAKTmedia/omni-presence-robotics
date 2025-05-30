@@ -1,0 +1,116 @@
+.
+├── Client
+│   ├── Client_Ui.py
+│   ├── Client_Ui.ui
+│   ├── Command.py
+│   ├── haarcascade_frontalface_default.xml
+│   ├── image
+│   │   ├── logo_Mini.png
+│   │   ├── Raspberry_4WD_Car.png
+│   │   └── Raspberry_4WD_M_Car.png
+│   ├── IP.txt
+│   ├── Main.py
+│   ├── Thread.py
+│   └── Video.py
+├── kv-store
+│   ├── kvstore
+│   ├── LICENSE
+│   ├── main.c
+│   ├── Makefile
+│   ├── README.md
+│   ├── server.c
+│   ├── server.h
+│   ├── store.c
+│   ├── store.h
+│   ├── utils.c
+│   └── utils.h
+├── kv-store.py
+├── Libs
+│   └── rpi-ws281x-python
+│       ├── examples
+│       │   ├── lowlevel.py
+│       │   ├── multistrandtest.py
+│       │   ├── neopixelclock.py
+│       │   ├── SK6812_lowlevel.py
+│       │   ├── SK6812_strandtest.py
+│       │   ├── SK6812_white_test.py
+│       │   └── strandtest.py
+│       ├── library
+│       │   ├── CHANGELOG.txt
+│       │   ├── lib
+│       │   ├── LICENSE
+│       │   ├── MANIFEST.in
+│       │   ├── README.rst
+│       │   ├── rpi_ws281x
+│       │   ├── rpi_ws281x.i
+│       │   ├── rpi_ws281x.py
+│       │   ├── rpi_ws281x_wrap.c
+│       │   ├── setup.py
+│       │   └── version.h
+│       ├── LICENSE
+│       └── README.md
+├── project_tree.txt
+├── requirements_pi.txt
+├── requirements.txt
+├── Server
+│   ├── adc.py
+│   ├── buzzer.py
+│   ├── camera.py
+│   ├── camera_servo_controller.py
+│   ├── camera_streamer.py
+│   ├── car.py
+│   ├── cat_toy_servo.py
+│   ├── command.py
+│   ├── face_tracking.py
+│   ├── infrared.py
+│   ├── __init__.py
+│   ├── joystick_motor_controller.py
+│   ├── joystick_terrain.py
+│   ├── led.py
+│   ├── main.py
+│   ├── message.py
+│   ├── motor.py
+│   ├── Navigation
+│   │   ├── autonomy_server.py
+│   │   ├── control_server.py
+│   │   ├── cost_map_builder.py
+│   │   ├── __init__.py
+│   │   ├── navigator.py
+│   │   ├── object_detector.py
+│   │   ├── path_planner.py
+│   │   ├── perception.py
+│   │   ├── slam_interface.py
+│   │   └── utils.py
+│   ├── parameter.py
+│   ├── pca9685.py
+│   ├── photoresistor.py
+│   ├── rpi_ledpixel.py
+│   ├── server_csi.py
+│   ├── server.py
+│   ├── server_ui.py
+│   ├── server_usb.py
+│   ├── servo.py
+│   ├── servo-test.py
+│   ├── servo_test.py
+│   ├── spi_ledpixel.py
+│   ├── system-monitoring
+│   │   ├── MAKEFILE
+│   │   └── storage-safety.c
+│   ├── tcp_server.py
+│   ├── test.py
+│   ├── test_script.py
+│   ├── Thread.py
+│   ├── To
+│   ├── ultrasonic.py
+│   ├── usb_camera.py
+│   ├── Vision
+│   │   ├── camera_stream.py
+│   │   ├── mdoe_handler.py
+│   │   ├── notifier.py
+│   │   └── object_detection.py
+│   └── websocket_server.py
+├── setup_macos.py
+├── setup.py
+└── setup_windows.py
+
+14 directories, 100 files

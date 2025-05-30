@@ -31,6 +31,27 @@ We **do not** build the frontend within Docker to avoid cross-platform native mo
 * [Docker Compose](https://docs.docker.com/compose/)
 
 ---
+## System Setup SAFETY FIRST
+
+	## 1.) create service file
+		sudo nano /etc/systemd/system/motor-failsafe.service
+	## 2.) file contents
+[Unit]
+Description=Robot Motor Failsafe Daemon
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=trentynnicholas
+WorkingDirectory=/home/trentynnicholas/Desktop/omni-presence-robotics
+ExecStartPre=/bin/sleep 60
+ExecStart=/usr/bin/python3 /home/trentynnicholas/Desktop/omni-presence-robotics/Backend/Server/motor_failsafe_monitor.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
 
 ## 🛠️ Frontend Setup
 

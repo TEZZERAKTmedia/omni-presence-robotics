@@ -7,16 +7,13 @@ import json
 import os
 from flask import Flask, jsonify
 
-
 from tcp_server import TCPServer
 import websocket_server
 from joystick_motor_controller import drive_from_joystick as drive_mecanum_joystick
 from joystick_terrain import drive_from_terrain_joystick
 from cat_toy_servo import control_cat_toy
 from joystick_motor_controller import check_idle_and_stop
-from camera_servo_controller import control_camera_servo
-
-
+from camera_servo_controller import control_camera_servo, init_camera_servo  # <-- import init_camera_servo
 
 class Server:
     def __init__(self):
@@ -83,6 +80,8 @@ class Server:
         return self.video_server.message_queue
 
 if __name__ == '__main__':
+    init_camera_servo()  # <-- Stop camera servos immediately on boot
+
     server = Server()
     server.start_tcp_servers(5003, 8003)
 
@@ -100,7 +99,6 @@ if __name__ == '__main__':
 
         envs = sorted(os.listdir(env_dir))
         return jsonify(envs)
-    
 
     try:
         while True:
