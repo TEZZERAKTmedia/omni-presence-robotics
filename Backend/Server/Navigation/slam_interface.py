@@ -5,13 +5,16 @@ import os
 import signal
 import subprocess
 
+
 # --- Path helpers ---
 def base_path(*parts):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", *parts))
 
+def get_slam_binary_path():
+    return base_path("ORB_SLAM3", "Examples", "Stereo", "stereo_tum")
+
 def binary_exists():
-    bin_path = base_path("ORB_SLAM3", "Examples", "Stereo", "stereo_tum")
-    return os.path.isfile(bin_path)
+    return os.path.isfile(get_slam_binary_path())
 
 async def try_build_orbslam():
     print("[SLAM] Checking for SLAM binary...")
@@ -23,9 +26,11 @@ async def try_build_orbslam():
     print("[SLAM] SLAM binary missing — attempting build... 🔧")
 
     orbslam_dir = base_path("ORB_SLAM3")
+    build_script = os.path.join(orbslam_dir, "build.sh")
+
     try:
-        result = subprocess.run(
-            ["bash", "build.sh"],
+        subprocess.run(
+            ["bash", build_script],
             cwd=orbslam_dir,
             check=True,
             stdout=subprocess.PIPE,
@@ -42,10 +47,11 @@ async def try_build_orbslam():
         print("[SLAM] Build failed — binary still missing ❌")
         return False
 
+
 # --- PoseListener class ---
 class PoseListener:
-    def __init__(self):
-        self.uri = "ws://localhost:8780"
+    def __init__(self, uri="ws://localhost:8780"):
+        self.uri = uri
         self.pose_queue = asyncio.Queue()
         self.landmarks = []
 
@@ -76,13 +82,16 @@ class PoseListener:
         return None
 
     async def disconnect(self):
-        await self.conn.close()
+        if hasattr(self, 'conn'):
+            await self.conn.close()
+
 
 # --- Global pose listener instance ---
 pose_listener = PoseListener()
 
 async def get_current_pose():
     return await pose_listener.get_pose()
+
 
 # --- SLAM Manager ---
 class SlamManager:
@@ -99,7 +108,7 @@ class SlamManager:
             "./Examples/Stereo/stereo_tum",
             "Vocabulary/ORBvoc.txt",
             "Examples/Stereo/TUM1_stereo.yaml",
-            "dataset/left",   # Replace with actual stereo input
+            "dataset/left",
             "dataset/right",
             cwd=self.orbslam_dir,
             stdout=asyncio.subprocess.PIPE,
