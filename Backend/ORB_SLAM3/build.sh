@@ -31,12 +31,31 @@ cd ../../../
 
 echo "[BUILD] Extracting vocabulary ..."
 cd Vocabulary
+
 if [ ! -f ORBvoc.txt ]; then
+  if [ ! -f ORBvoc.txt.tar.gz ]; then
+    echo "[INFO] ORBvoc.txt.tar.gz not found. Downloading from source..."
+    curl -L -o ORBvoc.txt.tar.gz https://raw.githubusercontent.com/raulmur/ORB_SLAM2/master/Vocabulary/ORBvoc.txt.tar.gz
+  fi
+
+  # Verify checksum BEFORE extraction
+  echo "[INFO] Verifying vocabulary archive..."
+  EXPECTED_HASH="cd16e7d02ab0e146c165e43084324e8c3b8c0b60e419b9f9b6701f503f1ef0a2"
+  DOWNLOADED_HASH=$(shasum -a 256 ORBvoc.txt.tar.gz | awk '{print $1}')
+
+  if [ "$DOWNLOADED_HASH" != "$EXPECTED_HASH" ]; then
+    echo "[ERROR] ORBvoc.txt.tar.gz hash mismatch! Download may be corrupted."
+    exit 1
+  fi
+
+  echo "[INFO] Extracting ORBvoc.txt.tar.gz..."
   tar -xf ORBvoc.txt.tar.gz
 else
   echo "[INFO] Vocabulary already extracted."
 fi
+
 cd ..
+
 
 echo "[BUILD] Building ORB_SLAM3 main library ..."
 mkdir -p build && cd build
