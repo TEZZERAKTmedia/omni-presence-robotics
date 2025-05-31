@@ -3,10 +3,18 @@ cd "$(dirname "$0")"
 
 set -e  # Stop on first error
 
-# Detect OpenCV path via Homebrew (macOS)
-OPENCV_DIR=$(brew --prefix opencv)/lib/cmake/opencv4
+
+# Detect platform and OpenCV path
+if command -v brew &> /dev/null; then
+  OPENCV_DIR=$(brew --prefix opencv)/lib/cmake/opencv4
+  echo "[BUILD] OpenCV_DIR set via Homebrew: $OPENCV_DIR"
+else
+  OPENCV_DIR="/usr/lib/x86_64-linux-gnu/cmake/opencv4"  # Default on many Linux systems
+  echo "[BUILD] OpenCV_DIR set for Linux: $OPENCV_DIR"
+fi
+
 export OpenCV_DIR=$OPENCV_DIR
-echo "[BUILD] OpenCV_DIR set to $OpenCV_DIR"
+
 
 echo "[BUILD] Building Thirdparty/DBoW2 ..."
 cd Thirdparty/DBoW2
