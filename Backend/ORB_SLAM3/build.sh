@@ -31,7 +31,8 @@ fi
 
 export OpenCV_DIR=$OPENCV_DIR
 
-COMMON_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-Wno-error -Wno-array-bounds'"
+COMMON_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-Wno-error\ -Wno-array-bounds"
+
 
 # Build Thirdparty/DBoW2
 echo "[BUILD] Building Thirdparty/DBoW2 ..."
