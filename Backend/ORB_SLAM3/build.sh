@@ -3,6 +3,25 @@ cd "$(dirname "$0")"
 
 set -e  # Stop on first error
 
+# Function to detect and clear invalid CMake cache
+check_and_clean_cache() {
+  BUILD_DIR=$1
+  EXPECTED_SOURCE=$2
+
+  CACHE_FILE="$BUILD_DIR/CMakeCache.txt"
+
+  if [ -f "$CACHE_FILE" ]; then
+    ACTUAL_SOURCE=$(grep CMAKE_HOME_DIRECTORY "$CACHE_FILE" | cut -d= -f2)
+
+    if [ "$ACTUAL_SOURCE" != "$EXPECTED_SOURCE" ]; then
+      echo "[INFO] Cache mismatch detected in $BUILD_DIR"
+      echo "       Expected: $EXPECTED_SOURCE"
+      echo "       Found:    $ACTUAL_SOURCE"
+      echo "       Cleaning build directory..."
+      rm -rf "$BUILD_DIR"
+    fi
+  fi
+}
 
 # Detect platform and OpenCV path
 if command -v brew &> /dev/null; then
@@ -15,28 +34,34 @@ fi
 
 export OpenCV_DIR=$OPENCV_DIR
 
-
+# Build Thirdparty/DBoW2
 echo "[BUILD] Building Thirdparty/DBoW2 ..."
 cd Thirdparty/DBoW2
+check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 cd ../../../
 
+# Build Thirdparty/g2o
 echo "[BUILD] Building Thirdparty/g2o ..."
 cd Thirdparty/g2o
+check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 cd ../../../
 
+# Build Thirdparty/Sophus
 echo "[BUILD] Building Thirdparty/Sophus ..."
 cd Thirdparty/Sophus
+check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 cd ../../../
 
+# Download and extract ORB vocabulary
 echo "[BUILD] Extracting vocabulary ..."
 cd Vocabulary
 
@@ -64,8 +89,9 @@ fi
 
 cd ..
 
-
+# Build ORB_SLAM3 main library
 echo "[BUILD] Building ORB_SLAM3 main library ..."
+check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
@@ -76,6 +102,5 @@ if [ -f Examples/Stereo/stereo_tum ]; then
 else
   echo "[❌ ERROR] stereo_tum was not built. Please check CMakeLists.txt"
 fi
-
 
 echo "[✅ DONE] ORB_SLAM3 built successfully."
