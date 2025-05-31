@@ -2,6 +2,12 @@
 
 This project contains a full-stack robotics platform with a React-based frontend, Python-based backend, and hardware-driven autonomy powered by a Raspberry Pi.
 
+## Developement Platform
+macOS sequoia 
+## Production Platform
+Rasberry Pi
+
+
 ## 📁 Project Structure
 
 ```
