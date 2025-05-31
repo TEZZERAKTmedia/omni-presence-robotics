@@ -31,15 +31,18 @@ fi
 
 export OpenCV_DIR=$OPENCV_DIR
 
-COMMON_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-Wno-error\ -Wno-array-bounds"
-
+COMMON_FLAGS=(
+  -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_CXX_FLAGS=-Wno-error
+  -DCMAKE_CXX_FLAGS=-Wno-array-bounds
+)
 
 # Build Thirdparty/DBoW2
 echo "[BUILD] Building Thirdparty/DBoW2 ..."
 cd Thirdparty/DBoW2
 check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
-cmake .. $COMMON_FLAGS
+cmake .. "${COMMON_FLAGS[@]}"
 make -j$(nproc)
 cd ../../../
 
@@ -48,7 +51,7 @@ echo "[BUILD] Building Thirdparty/g2o ..."
 cd Thirdparty/g2o
 check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
-cmake .. $COMMON_FLAGS
+cmake .. "${COMMON_FLAGS[@]}"
 make -j$(nproc)
 cd ../../../
 
@@ -57,7 +60,7 @@ echo "[BUILD] Building Thirdparty/Sophus (skipping tests) ..."
 cd Thirdparty/Sophus
 check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
-cmake .. $COMMON_FLAGS -DBUILD_TESTS=OFF
+cmake .. "${COMMON_FLAGS[@]}" -DBUILD_TESTS=OFF
 make -j$(nproc)
 cd ../../../
 
@@ -89,7 +92,7 @@ cd ..
 echo "[BUILD] Building ORB_SLAM3 ..."
 check_and_clean_cache build "$(pwd)"
 mkdir -p build && cd build
-cmake .. $COMMON_FLAGS
+cmake .. "${COMMON_FLAGS[@]}"
 make -j$(nproc)
 
 # Confirm build
