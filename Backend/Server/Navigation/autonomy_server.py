@@ -1,9 +1,9 @@
-# autonomy_server.py
 import asyncio
 import json
 import os
 import sys
 
+# Add project root to import path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from slam_interface import SlamManager, PoseListener, try_build_orbslam
@@ -12,7 +12,7 @@ from navigator import Navigator
 from cost_map_builder import build_cost_map
 from frontier_finder import find_frontiers
 from path_planner import a_star
-
+from motor_safety import initialize_and_stop_servos, stop_servos
 
 def choose_best_frontier(frontiers, current_pose):
     def dist(a, b):
@@ -32,18 +32,20 @@ class AutonomyServer:
         self.navigator = Navigator(visited_file=self.visited_file)
 
         self.running = False
+        self.exploration_started = False
+        self.pwm = None
 
-    async def start(self):
-        # ✅ Try building ORB-SLAM before starting it
+    async def initialize(self):
+        self.pwm = initialize_and_stop_servos()
+
         if not await try_build_orbslam():
             print("[ERROR] SLAM binary could not be built.")
             await self.control_server.broadcast(json.dumps({
                 "type": "slam_boot_error",
                 "message": "SLAM binary build failed. Check robot hardware or build.sh."
             }))
-            return  # ⛔ Abort early if build failed
+            return False
 
-        # ✅ Start SLAM
         await self.slam_manager.start_slam()
 
         if os.path.exists(self.map_file):
@@ -53,6 +55,14 @@ class AutonomyServer:
         await self.pose_listener.connect()
         await self.control_server.start()
 
+        print("[SERVER] Initialization complete. Awaiting exploration start command.")
+        return True
+
+    async def start_exploration(self):
+        if self.exploration_started:
+            return
+
+        self.exploration_started = True
         self.running = True
         await self.run_exploration_mode()
         await self.shutdown()
@@ -103,6 +113,7 @@ class AutonomyServer:
 
     async def shutdown(self):
         print("[SERVER] Shutting down…")
+        stop_servos(self.pwm)
         await self.control_server.stop()
         await self.pose_listener.disconnect()
         await self.slam_manager.stop_slam()
@@ -111,4 +122,4 @@ class AutonomyServer:
 
 if __name__ == "__main__":
     server = AutonomyServer()
-    asyncio.run(server.start())
+    asyncio.run(server.initialize())
